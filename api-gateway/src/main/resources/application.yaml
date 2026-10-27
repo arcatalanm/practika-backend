@@ -1,0 +1,35 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      server:
+        webmvc:
+          routes:
+            # 1. Autenticación, Usuarios y Cursos
+            - id: auth-service
+              uri: ${IDENTITY_SERVICE_URL:http://localhost:8081}
+              predicates:
+                - Path=/api/v1/auth/**
+
+            # 2. Asignaturas y Objetivos de Aprendizaje
+            - id: academic-service
+              uri: ${ACADEMIC_SERVICE_URL:http://localhost:8082}
+              predicates:
+                - Path=/api/v1/academic/**
+
+            # 3. Actividades, Pruebas, Preguntas y Materiales
+            - id: content-service
+              uri: ${ACTIVITY_SERVICE_URL:http://localhost:8083}
+              predicates:
+                - Path=/api/v1/content/**  
+
+            # 4. Respuestas, Corrección y Notas
+            - id: grading-service
+              uri: ${GRADING_SERVICE_URL:http://localhost:8084}
+              predicates:
+                - Path=/api/v1/grading/**
+
