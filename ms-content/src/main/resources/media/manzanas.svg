@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 270" fill="none">
+  <rect width="600" height="270" rx="30" fill="#fff3de"/>
+  <defs><g id="apple"><path d="M0-12c-40-23-52 22-28 52 12 16 20 7 28 7s16 9 28-7C52 10 40-35 0-12Z" fill="#e97565"/><path d="M0-11v-18" stroke="#835840" stroke-width="6" stroke-linecap="round"/><path d="M2-23q19-23 32-6-15 13-32 6Z" fill="#5c9b69"/><path d="M-21 0q-9 8-7 17" stroke="#ffb7a3" stroke-width="5" stroke-linecap="round"/></g></defs>
+  <ellipse cx="300" cy="226" rx="165" ry="15" fill="#ead3ab"/>
+  <use href="#apple" x="220" y="112"/><use href="#apple" x="300" y="98"/><use href="#apple" x="380" y="112"/>
+  <path d="m136 149 35 72h258l35-72Z" fill="#bd8553"/>
+  <path d="M150 165h299m-290 20h280m-269 21h259m-218-54 7 64m47-64 2 64m49-64-3 64m51-64-7 64" stroke="#d7a776" stroke-width="6"/>
+</svg>

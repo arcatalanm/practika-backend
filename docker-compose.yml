@@ -1,0 +1,170 @@
+services:
+  db-auth:
+    image: mysql:8.4
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-practika_dev_password}
+      MYSQL_DATABASE: practika_auth
+    ports:
+      - "3310:3306"
+    volumes:
+      - auth-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$${MYSQL_ROOT_PASSWORD} --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+    restart: unless-stopped
+
+  db-academic:
+    image: mysql:8.4
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-practika_dev_password}
+      MYSQL_DATABASE: practika_academic
+    ports:
+      - "3311:3306"
+    volumes:
+      - academic-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$${MYSQL_ROOT_PASSWORD} --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+    restart: unless-stopped
+
+  db-content:
+    image: mysql:8.4
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-practika_dev_password}
+      MYSQL_DATABASE: practika_content
+    ports:
+      - "3312:3306"
+    volumes:
+      - content-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$${MYSQL_ROOT_PASSWORD} --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+    restart: unless-stopped
+
+  db-grading:
+    image: mysql:8.4
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-practika_dev_password}
+      MYSQL_DATABASE: practika_grading
+    ports:
+      - "3313:3306"
+    volumes:
+      - grading-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$${MYSQL_ROOT_PASSWORD} --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+    restart: unless-stopped
+
+  ms-auth:
+    build: ./ms-auth
+    environment:
+      DB_URL: jdbc:mysql://db-auth:3306/practika_auth?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      DB_USERNAME: root
+      DB_PASSWORD: ${MYSQL_ROOT_PASSWORD:-practika_dev_password}
+      SPRING_LIQUIBASE_CONTEXTS: ${LIQUIBASE_CONTEXTS:-dev}
+      JWT_SECRET: ${JWT_SECRET:-practika-ms-auth-dev-secret-key-change-in-production-2026}
+      JWT_ISSUER: practika-ms-auth
+    depends_on:
+      db-auth:
+        condition: service_healthy
+    ports:
+      - "8081:8081"
+    restart: on-failure
+
+  ms-academic:
+    build: ./ms-academic
+    environment:
+      DB_URL: jdbc:mysql://db-academic:3306/practika_academic?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      DB_USERNAME: root
+      DB_PASSWORD: ${MYSQL_ROOT_PASSWORD:-practika_dev_password}
+      IDENTITY_SERVICE_URL: http://ms-auth:8081
+      SPRING_LIQUIBASE_CONTEXTS: ${LIQUIBASE_CONTEXTS:-dev}
+    depends_on:
+      db-academic:
+        condition: service_healthy
+      ms-auth:
+        condition: service_started
+    ports:
+      - "8082:8082"
+    restart: on-failure
+
+  ms-content:
+    build: ./ms-content
+    environment:
+      DB_URL: jdbc:mysql://db-content:3306/practika_content?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      DB_USERNAME: root
+      DB_PASSWORD: ${MYSQL_ROOT_PASSWORD:-practika_dev_password}
+      SPRING_LIQUIBASE_CONTEXTS: ${LIQUIBASE_CONTEXTS:-dev}
+      IDENTITY_SERVICE_URL: http://ms-auth:8081
+      ACADEMIC_SERVICE_URL: http://ms-academic:8082
+    depends_on:
+      db-content:
+        condition: service_healthy
+      ms-auth:
+        condition: service_started
+      ms-academic:
+        condition: service_started
+    ports:
+      - "8083:8083"
+    restart: on-failure
+
+  ms-grading:
+    build: ./ms-grading
+    environment:
+      DB_URL: jdbc:mysql://db-grading:3306/practika_grading?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      DB_USERNAME: root
+      DB_PASSWORD: ${MYSQL_ROOT_PASSWORD:-practika_dev_password}
+      SPRING_LIQUIBASE_CONTEXTS: ${LIQUIBASE_CONTEXTS:-dev}
+      IDENTITY_SERVICE_URL: http://ms-auth:8081
+      ACTIVITY_SERVICE_URL: http://ms-content:8083
+      ACADEMIC_SERVICE_URL: http://ms-academic:8082
+    depends_on:
+      db-grading:
+        condition: service_healthy
+      ms-auth:
+        condition: service_started
+      ms-content:
+        condition: service_started
+      ms-academic:
+        condition: service_started
+    ports:
+      - "8084:8084"
+    restart: on-failure
+
+  api-gateway:
+    build: ./api-gateway
+    environment:
+      IDENTITY_SERVICE_URL: http://ms-auth:8081
+      ACADEMIC_SERVICE_URL: http://ms-academic:8082
+      ACTIVITY_SERVICE_URL: http://ms-content:8083
+      GRADING_SERVICE_URL: http://ms-grading:8084
+    depends_on:
+      ms-auth:
+        condition: service_started
+      ms-academic:
+        condition: service_started
+      ms-content:
+        condition: service_started
+      ms-grading:
+        condition: service_started
+    ports:
+      - "8080:8080"
+    restart: on-failure
+
+volumes:
+  auth-data:
+  academic-data:
+  content-data:
+  grading-data:
