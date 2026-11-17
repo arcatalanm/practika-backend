@@ -54,7 +54,7 @@ public class SeccionService {
     public SeccionResponseDTO cambiarEstado(Integer id, boolean activo) {
         Seccion s = buscar(id);
         if (activo && !Boolean.TRUE.equals(s.getNivel().getActivo()))
-            throw new BadRequestException("Solo se admiten niveles de primero a octavo básico");
+            throw new BadRequestException("Solo se admiten Primero y Segundo básico");
         s.setActivo(activo);
         return SeccionMapper.toResponseDTO(secciones.save(s));
     }

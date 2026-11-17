@@ -26,22 +26,27 @@ public class CursoPortalService {
     private final CursoPortalRepository cursos;
     private final IdentityClient identity;
     private final AsignaturaRepository asignaturas;
+    private final com.practika.ms_academic.repository.DocenteAsignaturaRepository especialidades;
 
     /** Automatic section-subject links. There is no classroom or school-year setup. */
     @Transactional
     public List<CursoPortalResponse> listar(Authentication auth) {
         var user = usuarioActual();
         if (!Boolean.TRUE.equals(user.activo())) throw new ResponseStatusException(HttpStatus.FORBIDDEN, "La cuenta está inactiva");
-        var sections = tieneRol(auth, "ADMIN", "UTP")
+        var especialidad = "PROFESOR".equals(user.rol()) ? especialidades.findById(user.run()).orElse(null) : null;
+        boolean ambosBasicos = especialidad != null && Boolean.TRUE.equals(especialidad.getAmbosBasicos());
+        var sections = tieneRol(auth, "ADMIN", "UTP") || ambosBasicos
                 ? consultar(identity::obtenerSecciones, "No se pudieron consultar las secciones")
                 : user.seccion() == null ? List.<IdentityClient.SeccionRef>of() : List.of(user.seccion());
         var subjects = asignaturas.bloquearCatalogo();
         var result = new java.util.ArrayList<CursoPortalResponse>();
         for (var section : sections) {
             if (!Boolean.TRUE.equals(section.activo())) continue;
+            if (ambosBasicos && !esPrimeroOSegundo(section)) continue;
             var current = cursos.findByIdSeccionAndPeriodoIsNullOrderByIdAsc(section.id());
             for (var subject : subjects) {
                 if (!Boolean.TRUE.equals(subject.getActivo())) continue;
+                if (especialidad != null && !subject.getId().equals(especialidad.getIdAsignatura())) continue;
                 var link = current.stream().filter(c -> subject.getId().equals(c.getIdAsignatura())).findFirst().orElse(null);
                 if (link == null) {
                     link = new CursoPortal(); link.setIdSeccion(section.id()); link.setIdAsignatura(subject.getId());
@@ -96,7 +101,7 @@ public class CursoPortalService {
         validarAcceso(idCurso, usuarioActual(), auth);
         var personas = new java.util.LinkedHashMap<Integer, IdentityClient.PersonaPublicaRef>();
         var section = consultar(() -> identity.obtenerSeccion(curso.getIdSeccion()), "No existe la sección");
-        for (var docente : consultar(() -> identity.obtenerProfesores(section.id()), "No se pudieron consultar los profesores")) {
+        for (var docente : docentesDeCurso(curso, section)) {
             personas.put(docente.run(), docente);
         }
         var estudiantes = consultar(() -> identity.obtenerParticipantesActuales(curso.getIdSeccion()),
@@ -118,7 +123,8 @@ public class CursoPortalService {
         if ("ESTUDIANTE".equalsIgnoreCase(user.rol()) && Boolean.TRUE.equals(consultar(
                 ()->identity.tieneMatricula(section.id(),user.run(),false),"No se pudo consultar la matrícula"))) return;
         if ("PROFESOR".equalsIgnoreCase(user.rol())
-                && user.seccion() != null && section.id().equals(user.seccion().id()) && Boolean.TRUE.equals(section.activo())) return;
+                && atiendeSeccion(user, section) && Boolean.TRUE.equals(section.activo())
+                && imparte(user.run(), c.getIdAsignatura())) return;
         throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No tienes acceso a este curso del portal");
     }
 
@@ -131,7 +137,7 @@ public class CursoPortalService {
         String seccionNombre = seccion.nivelEducativo();
         String subjectName = c.getIdAsignatura() == null ? null : asignaturas.findById(c.getIdAsignatura())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.CONFLICT, "No existe la asignatura asociada")).getNombre();
-        var runs = consultar(() -> identity.obtenerProfesores(seccion.id()), "No se pudieron consultar los profesores").stream()
+        var runs = docentesDeCurso(c, seccion).stream()
                 .map(d -> new DocentePortalResponse(d.run(), d.nombreCompleto())).toList();
         return new CursoPortalResponse(c.getId(), seccion.id(), seccionNombre, c.getIdAsignatura(), subjectName,
                 c.getPeriodo() == null ? null : c.getPeriodo().getId(), "", subjectName, c.getDescripcion(), c.getActivo(), runs);
@@ -160,6 +166,47 @@ public class CursoPortalService {
 
     private CursoPortal buscar(Integer id) {
         return cursos.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No existe curso del portal con ID " + id));
+    }
+
+    private boolean imparte(Integer run, Integer idAsignatura) {
+        return especialidades.findById(run).map(e -> e.getIdAsignatura().equals(idAsignatura)).orElse(true);
+    }
+
+    private boolean esPrimeroOSegundo(IdentityClient.SeccionRef section) {
+        return "Primero básico".equalsIgnoreCase(section.nivelEducativo())
+                || "Segundo básico".equalsIgnoreCase(section.nivelEducativo())
+                || "1° Básico".equalsIgnoreCase(section.nivelEducativo())
+                || "2° Básico".equalsIgnoreCase(section.nivelEducativo());
+    }
+
+    private boolean atiendeSeccion(IdentityClient.UsuarioRef user, IdentityClient.SeccionRef section) {
+        var especialidad = especialidades.findById(user.run()).orElse(null);
+        if (especialidad != null && Boolean.TRUE.equals(especialidad.getAmbosBasicos()))
+            return esPrimeroOSegundo(section);
+        return user.seccion() != null && section.id().equals(user.seccion().id());
+    }
+
+    private List<IdentityClient.PersonaPublicaRef> docentesDeCurso(CursoPortal curso, IdentityClient.SeccionRef section) {
+        var docentes = new java.util.LinkedHashMap<Integer, IdentityClient.PersonaPublicaRef>();
+        var user = usuarioActual();
+        // Auth's section roster remains restricted to membership; cross-grade teachers use public teacher records below.
+        boolean consultarSeccion = !"PROFESOR".equals(user.rol())
+                || (user.seccion() != null && section.id().equals(user.seccion().id()));
+        if (consultarSeccion) {
+            for (var docente : consultar(() -> identity.obtenerProfesores(section.id()), "No se pudieron consultar los profesores")) {
+                if (imparte(docente.run(), curso.getIdAsignatura())) docentes.put(docente.run(), docente);
+            }
+        }
+        if (Boolean.TRUE.equals(section.activo()) && esPrimeroOSegundo(section)) {
+            for (var especialidad : especialidades.findByIdAsignaturaAndAmbosBasicosTrue(curso.getIdAsignatura())) {
+                var docente = consultar(() -> {
+                    try { return identity.obtenerDocentePublico(especialidad.getRunProfesor()); }
+                    catch (FeignException ex) { if (ex.status() == 404) return null; throw ex; }
+                }, "No se pudo consultar al profesor de la asignatura");
+                if (docente != null) docentes.put(docente.run(), docente);
+            }
+        }
+        return List.copyOf(docentes.values());
     }
 
     private IdentityClient.UsuarioRef usuarioActual() {

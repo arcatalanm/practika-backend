@@ -47,7 +47,8 @@ public class EntregaService {
         int usados=ultima==null?0:ultima.getNumeroIntento();
         boolean autorizado=ultima!=null && "FINALIZADO".equals(ultima.getEstado()) && Boolean.TRUE.equals(ultima.getPermiteReintento());
         int maximos=autorizado?Math.max(evaluacion.cantidadIntentos(),usados+1):evaluacion.cantidadIntentos();
-        boolean permitido=Boolean.TRUE.equals(evaluacion.activa()) && (ultima==null?usados<maximos:autorizado);
+        boolean quedanIntentos=usados<evaluacion.cantidadIntentos();
+        boolean permitido=Boolean.TRUE.equals(evaluacion.activa()) && (ultima==null || quedanIntentos || autorizado);
         return new EstadoEntregaResponse(usados,maximos,false,permitido,ultima==null?null:detalle(ultima));
     }
 
@@ -67,25 +68,51 @@ public class EntregaService {
             throw error(HttpStatus.CONFLICT,"El intento ya fue enviado o necesita autorización del profesor");
         if(estado.ultimaEntrega()!=null) {
             var anterior=obtenerBloqueada(estado.ultimaEntrega().id());
-            if(!"FINALIZADO".equals(anterior.getEstado())||!Boolean.TRUE.equals(anterior.getPermiteReintento()))
-                throw error(HttpStatus.CONFLICT,"Espera la revisión y autorización del profesor");
-            anterior.setPermiteReintento(false);
+            boolean autorizada="FINALIZADO".equals(anterior.getEstado()) && Boolean.TRUE.equals(anterior.getPermiteReintento());
+            if(!autorizada && estado.intentosUsados()>=evaluacion.cantidadIntentos())
+                throw error(HttpStatus.CONFLICT,"Ya usaste todos tus intentos; pide a tu profesor otro intento");
+            if(autorizada) anterior.setPermiteReintento(false);
         }
         var preguntas=evaluacion.preguntas().stream().collect(Collectors.toMap(PreguntaSnapshot::id,Function.identity()));
         for(var item:request.respuestas()) validator.validarRespuestaPublicada(new RespuestaRequest(request.runEstudiante(),item.idPregunta(),
                 request.numeroIntento(),item.textoDesarrollo(),item.idsOpciones()),preguntas.get(item.idPregunta()));
+        boolean tieneAlternativas=evaluacion.preguntas().stream().anyMatch(this::autocorregible);
+        var clave=tieneAlternativas?validator.claveCorreccion(request.runEstudiante(),evaluacion.idEvaluacionAsignada()):evaluacion;
+        var preguntasClave=clave.preguntas().stream().collect(Collectors.toMap(PreguntaSnapshot::id,Function.identity()));
         var entrega=new Entrega();entrega.setRunEstudiante(request.runEstudiante());entrega.setNumeroIntento(request.numeroIntento());
         entrega.setFechaEntrega(LocalDateTime.now());copiarContexto(entrega,evaluacion);
         try {entrega=entregas.saveAndFlush(entrega);}
         catch(DataIntegrityViolationException ex){throw error(HttpStatus.CONFLICT,"Este intento ya fue enviado; actualiza la evaluación");}
         var pendiente=estados.findByCodigoIgnoreCase("PENDIENTE").orElseThrow(()->error(HttpStatus.CONFLICT,"Estado de revisión no configurado"));
+        var revisada=estados.findByCodigoIgnoreCase("REVISADA").orElseThrow(()->error(HttpStatus.CONFLICT,"Estado de revisión no configurado"));
+        boolean completa=true;
         for(var item:request.respuestas()) {
             var respuesta=new Respuesta();respuesta.setIdEntrega(entrega.getId());respuesta.setRunEstudiante(entrega.getRunEstudiante());
             respuesta.setIdPregunta(item.idPregunta());respuesta.setNumeroIntento(entrega.getNumeroIntento());respuesta.setFechaEntrega(entrega.getFechaEntrega());
-            respuesta.setTextoDesarrollo(item.textoDesarrollo());respuesta.setEstadoRevisionTipo(pendiente);respuesta=respuestas.saveAndFlush(respuesta);
+            respuesta.setTextoDesarrollo(item.textoDesarrollo());respuesta.setEstadoRevisionTipo(pendiente);
+            var pregunta=preguntasClave.get(item.idPregunta());
+            if(pregunta==null) throw error(HttpStatus.CONFLICT,"La clave no corresponde a la versión enviada");
+            if(autocorregible(pregunta)) {
+                var correctas=pregunta.opciones().stream().filter(o->Boolean.TRUE.equals(o.esCorrecta())).map(OpcionRef::id).collect(Collectors.toSet());
+                boolean claveValida=pregunta.opciones().stream().allMatch(o->o.esCorrecta()!=null) && !correctas.isEmpty()
+                        && ("SELECCION_MULTIPLE".equals(pregunta.tipo()) || correctas.size()==1);
+                if(claveValida) {
+                    var elegidas=new HashSet<>(item.idsOpciones()==null?List.<Integer>of():item.idsOpciones());
+                    respuesta.setPuntajeObtenido(correctas.equals(elegidas)?pregunta.puntajeMaximo():BigDecimal.ZERO);
+                    respuesta.setEstadoRevisionTipo(revisada);
+                } else completa=false;
+            } else completa=false;
+            respuesta=respuestas.saveAndFlush(respuesta);
             for(Integer id:item.idsOpciones()==null?List.<Integer>of():item.idsOpciones()) opciones.save(new RespuestaOpcion(respuesta.getId(),id));
         }
+        if(completa) {
+            entrega.setEstado("FINALIZADO");entrega.setFechaRevision(LocalDateTime.now());entregas.save(entrega);
+        }
         opciones.flush();return detalle(entrega);
+    }
+
+    private boolean autocorregible(PreguntaSnapshot pregunta) {
+        return Set.of("SELECCION_UNICA","SELECCION_MULTIPLE","VERDADERO_FALSO").contains(pregunta.tipo()) && !pregunta.opciones().isEmpty();
     }
 
     @Transactional(readOnly=true)

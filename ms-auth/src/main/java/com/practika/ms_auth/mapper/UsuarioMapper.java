@@ -25,7 +25,6 @@ public final class UsuarioMapper {
         usuario.setPassword(passwordEncriptada);
         usuario.setRol(rol);
         usuario.setSeccion(seccion);
-        usuario.setImgPerfil(limpiarOpcional(dto.getImgPerfil()));
         usuario.setActivo(true);
         return usuario;
     }
@@ -59,9 +58,6 @@ public final class UsuarioMapper {
         }
         if (email != null) {
             usuario.setEmail(normalizarEmail(email));
-        }
-        if (imgPerfil != null) {
-            usuario.setImgPerfil(limpiarOpcional(imgPerfil));
         }
         if (seccion != null) {
             usuario.setSeccion(seccion);

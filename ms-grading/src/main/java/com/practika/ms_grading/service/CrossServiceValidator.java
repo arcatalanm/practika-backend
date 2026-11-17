@@ -22,6 +22,14 @@ public class CrossServiceValidator {
     private final IdentityClient identityClient;
     private final ContentClient contentClient;
     private final AcademicClient academicClient;
+    @org.springframework.beans.factory.annotation.Value("${GRADING_INTERNAL_TOKEN:}")
+    private String gradingToken;
+
+    public ContentClient.EvaluacionPublicadaRef claveCorreccion(Integer run, Integer id) {
+        if (gradingToken == null || gradingToken.isBlank())
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Configura GRADING_INTERNAL_TOKEN en ms-content y ms-grading");
+        return consultar(() -> contentClient.obtenerClaveCorreccion(id, run, gradingToken), "No existe la versión publicada para corregir");
+    }
 
     public ContentClient.EvaluacionPublicadaRef validarAsignada(Integer run,Integer id,boolean paraEnviar,Authentication auth) {
         if(id==null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"Indica idEvaluacionAsignada; el curso y período se obtienen de su publicación");

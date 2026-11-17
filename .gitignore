@@ -1,18 +1,39 @@
+# Entorno y secretos
 .env
-**/target/
-**/target-refactor-validation/
-.validation-pom.xml
-docs/refactor/logs/
-**/target-refactor-b12*/
-**/target-refactor-b21*/
-**/target-refactor-b25/
-**/target-auth-centralization/
-**/target-academic-redistribution/
-**/target-autoria-unificada/
-**/target-cierre-modelo/
-.migration-backups/
-**/__pycache__/
-docs
+.env.*
+# Si quieres versionar la plantilla, borra la línea siguiente
 .env.example
-.vscode
-.migration-backups
+*.pem
+*.key
+*.p12
+
+# Build Maven
+**/target/
+**/target-*/
+.validation-pom.xml
+
+# Logs y volcados
+*.log
+hs_err_pid*.log
+replay_pid*.log
+*.hprof
+
+# Documentación y scripts internos
+docs/
+scripts/
+
+# Migraciones y respaldos
+.migration-backups/
+
+# Temporales del proyecto
+catalogo-asignaturas.txt
+error-academic.txt
+
+# Python
+**/__pycache__/
+
+# Editores y sistema
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

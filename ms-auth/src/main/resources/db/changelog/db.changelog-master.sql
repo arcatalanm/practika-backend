@@ -275,3 +275,61 @@ FROM usuarios u JOIN roles r ON r.id_rol=u.id_rol
 WHERE r.codigo='ESTUDIANTE' AND u.id_seccion IS NOT NULL
 AND u.run IN (20999001,20999002,20999101,20999211,20999212,20999213,20999214,20999102,20999221,20999222,20999223,20999224,20999103,20999231,20999232,20999233,20999234,20999104,20999241,20999242,20999243,20999244,20999105,20999251,20999252,20999253,20999254,20999106,20999261,20999262,20999263,20999264,20999107,20999271,20999272,20999273,20999274,20999108,20999281,20999282,20999283,20999284)
 AND NOT EXISTS (SELECT 1 FROM matriculas m WHERE m.run_estudiante=u.run AND m.activa=1);
+
+--changeset practika:auth-012-mvp-first-second-grade
+UPDATE niveles_educativos SET activo = 0 WHERE codigo NOT IN ('1° Básico','2° Básico');
+UPDATE niveles_educativos SET activo = 1 WHERE codigo IN ('1° Básico','2° Básico');
+UPDATE secciones s JOIN niveles_educativos n ON n.id_nivel_educativo = s.id_nivel_educativo SET s.activo = 0 WHERE n.activo = 0;
+
+--changeset practika:auth-013-fifteen-students-four-subject-teachers context:@dev
+-- Update only the known development fixture accounts. Never delete account/enrollment history.
+--preconditions onFail:HALT onError:HALT
+--precondition-sql-check expectedResult:12 SELECT COUNT(*) FROM usuarios WHERE run IN (12345670,12345672,12345673,12345674,12345675,12345676,12345677,12345680,12345679,12345671,12345682,12345683) AND email LIKE '%@practika.local'
+--precondition-sql-check expectedResult:0 SELECT COUNT(*) FROM usuarios WHERE run BETWEEN 21999001 AND 21999007 OR email IN ('estudiante09@practika.local','estudiante10@practika.local','estudiante11@practika.local','estudiante12@practika.local','estudiante13@practika.local','estudiante14@practika.local','estudiante15@practika.local')
+INSERT INTO secciones (id_nivel_educativo,activo)
+SELECT n.id_nivel_educativo,1 FROM niveles_educativos n WHERE n.codigo IN ('1° Básico','2° Básico')
+AND NOT EXISTS(SELECT 1 FROM secciones s WHERE s.id_nivel_educativo=n.id_nivel_educativo AND s.id_seccion_canonica IS NULL);
+UPDATE secciones s JOIN niveles_educativos n ON n.id_nivel_educativo=s.id_nivel_educativo SET s.activo=1 WHERE n.codigo IN ('1° Básico','2° Básico') AND s.id_seccion_canonica IS NULL;
+SET @mvp_primero=(SELECT s.id_seccion FROM secciones s JOIN niveles_educativos n ON n.id_nivel_educativo=s.id_nivel_educativo WHERE n.codigo='1° Básico' AND s.id_seccion_canonica IS NULL);
+UPDATE usuarios SET id_seccion=@mvp_primero,activo=1 WHERE run IN (12345670,12345672,12345673,12345674,12345675,12345676,12345677,12345680,12345679,12345671,12345682,12345683);
+INSERT INTO usuarios (run,dv,nombre1,appaterno,apmaterno,email,password,id_rol,id_seccion,activo) SELECT 21999001,'4','Javiera','Morales','Ríos','estudiante09@practika.local',u.password,r.id_rol,@mvp_primero,1 FROM usuarios u JOIN roles r ON r.codigo='ESTUDIANTE' WHERE u.run=12345670;
+INSERT INTO usuarios (run,dv,nombre1,appaterno,apmaterno,email,password,id_rol,id_seccion,activo) SELECT 21999002,'2','Lucas','Herrera','Vega','estudiante10@practika.local',u.password,r.id_rol,@mvp_primero,1 FROM usuarios u JOIN roles r ON r.codigo='ESTUDIANTE' WHERE u.run=12345670;
+INSERT INTO usuarios (run,dv,nombre1,appaterno,apmaterno,email,password,id_rol,id_seccion,activo) SELECT 21999003,'0','Martina','Castro','Pérez','estudiante11@practika.local',u.password,r.id_rol,@mvp_primero,1 FROM usuarios u JOIN roles r ON r.codigo='ESTUDIANTE' WHERE u.run=12345670;
+INSERT INTO usuarios (run,dv,nombre1,appaterno,apmaterno,email,password,id_rol,id_seccion,activo) SELECT 21999004,'9','Nicolás','Flores','Soto','estudiante12@practika.local',u.password,r.id_rol,@mvp_primero,1 FROM usuarios u JOIN roles r ON r.codigo='ESTUDIANTE' WHERE u.run=12345670;
+INSERT INTO usuarios (run,dv,nombre1,appaterno,apmaterno,email,password,id_rol,id_seccion,activo) SELECT 21999005,'7','Olivia','Rojas','Díaz','estudiante13@practika.local',u.password,r.id_rol,@mvp_primero,1 FROM usuarios u JOIN roles r ON r.codigo='ESTUDIANTE' WHERE u.run=12345670;
+INSERT INTO usuarios (run,dv,nombre1,appaterno,apmaterno,email,password,id_rol,id_seccion,activo) SELECT 21999006,'5','Santiago','Vargas','Leiva','estudiante14@practika.local',u.password,r.id_rol,@mvp_primero,1 FROM usuarios u JOIN roles r ON r.codigo='ESTUDIANTE' WHERE u.run=12345670;
+INSERT INTO usuarios (run,dv,nombre1,appaterno,apmaterno,email,password,id_rol,id_seccion,activo) SELECT 21999007,'3','Valentina','Torres','Mora','estudiante15@practika.local',u.password,r.id_rol,@mvp_primero,1 FROM usuarios u JOIN roles r ON r.codigo='ESTUDIANTE' WHERE u.run=12345670;
+UPDATE matriculas SET activa=0,fecha_fin=GREATEST(CURRENT_TIMESTAMP(6),fecha_inicio)
+WHERE run_estudiante IN (12345670,12345672,12345673,12345674,12345675,12345676,12345677,12345680,21999001,21999002,21999003,21999004,21999005,21999006,21999007) AND activa=1 AND id_seccion<>@mvp_primero;
+INSERT INTO matriculas (run_estudiante,id_seccion,fecha_inicio,activa,origen)
+SELECT u.run,@mvp_primero,CURRENT_TIMESTAMP(6),1,'DEMO' FROM usuarios u WHERE u.run IN (12345670,12345672,12345673,12345674,12345675,12345676,12345677,12345680,21999001,21999002,21999003,21999004,21999005,21999006,21999007)
+AND NOT EXISTS (SELECT 1 FROM matriculas m WHERE m.run_estudiante=u.run AND m.activa=1);
+-- Retire only the previous explicitly identified @demo account set, if that optional context was used.
+UPDATE matriculas m JOIN usuarios u ON u.run=m.run_estudiante SET m.activa=0,m.fecha_fin=GREATEST(CURRENT_TIMESTAMP(6),m.fecha_inicio)
+WHERE m.activa=1 AND u.run BETWEEN 20999101 AND 20999284 AND u.email LIKE '%.demo@practika.example.test';
+UPDATE usuarios SET activo=0 WHERE run BETWEEN 20999101 AND 20999284 AND email LIKE '%.demo@practika.example.test';
+
+--changeset practika:auth-014-only-first-and-second-sections
+UPDATE niveles_educativos SET activo=CASE WHEN codigo IN ('1° Básico','2° Básico') THEN 1 ELSE 0 END;
+INSERT INTO secciones (id_nivel_educativo,activo)
+SELECT n.id_nivel_educativo,1 FROM niveles_educativos n WHERE n.codigo IN ('1° Básico','2° Básico')
+AND NOT EXISTS (SELECT 1 FROM secciones s WHERE s.id_nivel_educativo=n.id_nivel_educativo AND s.id_seccion_canonica IS NULL);
+UPDATE secciones s JOIN niveles_educativos n ON n.id_nivel_educativo=s.id_nivel_educativo
+SET s.activo=CASE WHEN n.codigo IN ('1° Básico','2° Básico') AND s.id_seccion_canonica IS NULL THEN 1 ELSE 0 END;
+
+--changeset practika:auth-015-mvp-eight-first-seven-second context:@dev
+-- Move only the fixture students, retaining their previous enrollment history and passwords.
+--preconditions onFail:HALT onError:HALT
+--precondition-sql-check expectedResult:15 SELECT COUNT(*) FROM usuarios u JOIN roles r ON r.id_rol=u.id_rol WHERE r.codigo='ESTUDIANTE' AND u.activo=1 AND u.run IN (12345670,12345672,12345673,12345674,12345675,12345676,12345677,12345680,21999001,21999002,21999003,21999004,21999005,21999006,21999007)
+SET @mvp_primero=(SELECT s.id_seccion FROM secciones s JOIN niveles_educativos n ON n.id_nivel_educativo=s.id_nivel_educativo WHERE n.codigo='1° Básico' AND s.id_seccion_canonica IS NULL);
+SET @mvp_segundo=(SELECT s.id_seccion FROM secciones s JOIN niveles_educativos n ON n.id_nivel_educativo=s.id_nivel_educativo WHERE n.codigo='2° Básico' AND s.id_seccion_canonica IS NULL);
+UPDATE usuarios SET id_seccion=@mvp_primero WHERE run IN (12345670,12345672,12345673,12345674,12345675,12345676,12345677,12345680,12345679,12345671,12345682,12345683);
+UPDATE usuarios SET id_seccion=@mvp_segundo WHERE run BETWEEN 21999001 AND 21999007;
+UPDATE matriculas m JOIN usuarios u ON u.run=m.run_estudiante
+SET m.activa=0,m.fecha_fin=GREATEST(CURRENT_TIMESTAMP(6),m.fecha_inicio)
+WHERE m.activa=1 AND m.id_seccion<>u.id_seccion
+AND u.run IN (12345670,12345672,12345673,12345674,12345675,12345676,12345677,12345680,21999001,21999002,21999003,21999004,21999005,21999006,21999007);
+INSERT INTO matriculas (run_estudiante,id_seccion,fecha_inicio,activa,origen)
+SELECT u.run,u.id_seccion,CURRENT_TIMESTAMP(6),1,'DEMO' FROM usuarios u
+WHERE u.run IN (12345670,12345672,12345673,12345674,12345675,12345676,12345677,12345680,21999001,21999002,21999003,21999004,21999005,21999006,21999007)
+AND NOT EXISTS (SELECT 1 FROM matriculas m WHERE m.run_estudiante=u.run AND m.activa=1);

@@ -61,10 +61,3 @@ Solo login es público, mientras que `POST /api/v1/auth/register` requiere token
 | Calificaciones | http://localhost:8084/swagger-ui.html |
 
 Desactiva en producción con `OPENAPI_ENABLED=false`.
-
-## Tablas por base
-
-- `practika_auth`: `niveles_educativos`, `roles`, `secciones`, `usuarios`, `fotos_perfil`, `matriculas`
-- `practika_academic`: `asignaturas`, `objetivo_aprendizajes`
-- `practika_content`: `periodos_academicos`, `cursos_portal`, `docentes_cursos_portal`, `unidades`, `unidades_cursos`, `actividades`, `pruebas`, `tipos_pregunta`, `preguntas`, `opciones`, `tipos_material`, `materiales`, `archivos_recursos`, `evaluaciones_asignadas`, `archivos_evaluacion`, `materiales_unidad_archivados`
-- `practika_grading`: `entregas`, `estados_revision`, `respuestas`, `respuestas_opciones`, `observacion_pedagogicas`

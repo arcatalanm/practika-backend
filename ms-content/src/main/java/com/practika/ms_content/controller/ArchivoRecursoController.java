@@ -19,8 +19,9 @@ public class ArchivoRecursoController {
 
     @PostMapping(value="/preguntas/{id}/archivos",consumes=MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('UTP')") @ResponseStatus(HttpStatus.CREATED)
-    public MaterialResponse subir(@PathVariable Integer id, @RequestPart("archivo") MultipartFile archivo) {
-        return MaterialResponse.from(service.subir(id, archivo));
+    public MaterialResponse subir(@PathVariable Integer id, @RequestPart("archivo") MultipartFile archivo,
+            @RequestParam(required=false) String tipo) {
+        return MaterialResponse.from(service.subir(id, archivo, tipo));
     }
 
     @PostMapping(value="/actividades/{id}/archivos",consumes=MediaType.MULTIPART_FORM_DATA_VALUE)

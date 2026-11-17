@@ -9,6 +9,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 @FeignClient(name = "content-service", url = "${ACTIVITY_SERVICE_URL:http://localhost:8083}")
 public interface ContentClient {
+    @GetMapping("/internal/content/correccion/{id}/estudiantes/{run}")
+    EvaluacionPublicadaRef obtenerClaveCorreccion(@PathVariable("id") Integer id, @PathVariable("run") Integer run,
+            @org.springframework.web.bind.annotation.RequestHeader("X-Grading-Token") String token);
+
     @GetMapping("/api/v1/content/evaluaciones/{id}/estudiantes/{run}")
     EvaluacionPublicadaRef obtenerEvaluacionAsignada(@PathVariable("id") Integer id,@PathVariable("run") Integer run,
             @RequestParam("paraEnviar") boolean paraEnviar);

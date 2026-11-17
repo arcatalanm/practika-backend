@@ -221,6 +221,13 @@ public class EvaluacionPublicadaService {
         var archivo=copias.findById(id).orElseThrow(()->error(HttpStatus.NOT_FOUND,"No existe el archivo de esta versión"));
         obtener(archivo.getIdEvaluacionAsignada(),auth);return archivo;
     }
+    @Transactional(readOnly=true)
+    public EvaluacionPublicadaResponse paraCorreccion(Integer id, Integer run, Authentication auth) {
+        paraEstudiante(id, run, true, auth);
+        var e = evaluaciones.findById(id).orElseThrow(() -> error(HttpStatus.NOT_FOUND, "No existe la evaluación publicada"));
+        return respuesta(e, true);
+    }
+
     private EvaluacionPublicadaResponse respuesta(EvaluacionAsignada e,boolean staff) {
         var curso=curso(asignacion(e).getIdCurso());
         var c=json.readValue(e.getContenidoSnapshot(),EvaluacionPublicadaResponse.Contenido.class);

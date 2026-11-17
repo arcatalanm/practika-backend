@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import com.practika.ms_auth.dto.UsuarioResponseDTO;
 import com.practika.ms_auth.service.FotoPerfilService;
+import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 
 @RestController @RequestMapping("/api/v1/auth") @RequiredArgsConstructor
@@ -20,6 +21,8 @@ public class FotoPerfilController {
 
     @GetMapping(value="/usuarios/{run}/foto", produces=MediaType.IMAGE_JPEG_VALUE)
     public ResponseEntity<byte[]> obtener(@PathVariable Integer run) {
-        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).header("X-Content-Type-Options", "nosniff").body(service.obtener(run));
+        // La URL guardada lleva ?v=<uuid> y cambia en cada subida, así que cachear es seguro.
+        return ResponseEntity.ok().cacheControl(CacheControl.maxAge(30, TimeUnit.DAYS).cachePrivate())
+                .header("X-Content-Type-Options", "nosniff").body(service.obtener(run));
     }
 }

@@ -48,19 +48,12 @@ public class MaterialService {
 
     @Transactional
     public MaterialResponse crearEnActividad(Integer id, MaterialRequest dto) {
-        var evaluacion = evaluaciones.buscar(new EvaluacionRef(TipoEvaluacion.ACTIVIDAD, id));
-        Material material = new Material();
-        material.setEvaluacion(evaluacion);
-        aplicar(material, dto);
-        return MaterialResponse.from(materiales.save(material));
+        throw new ResponseStatusException(HttpStatus.GONE,"Agrega el material dentro de una pregunta");
     }
 
     @Transactional
     public MaterialResponse crearEnEvaluacion(Integer id, MaterialRequest dto) {
-        Material material = new Material();
-        material.setEvaluacion(evaluaciones.buscarPorId(id));
-        aplicar(material, dto);
-        return MaterialResponse.from(materiales.save(material));
+        throw new ResponseStatusException(HttpStatus.GONE,"Agrega el material dentro de una pregunta");
     }
 
     public List<MaterialResponse> listarDeEvaluacion(Integer id, Authentication auth) {
@@ -95,6 +88,8 @@ public class MaterialService {
     }
 
     private void aplicar(Material material, MaterialRequest dto) {
+        if (!java.util.Set.of("IMAGEN","AUDIO","TEXTO").contains(dto.tipo().trim().toUpperCase(java.util.Locale.ROOT)))
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"Solo puedes agregar imagen, audio o texto de lectura");
         TipoMaterial tipo = tipos.findByCodigoIgnoreCaseAndActivoTrue(dto.tipo().trim())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
                         "Tipo de material inexistente o inactivo"));
