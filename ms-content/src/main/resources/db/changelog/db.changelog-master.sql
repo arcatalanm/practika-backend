@@ -1,4 +1,4 @@
---liquibase formatted sql
+﻿--liquibase formatted sql
 
 
 --changeset practika:content-001-unidades
@@ -1141,4 +1141,84 @@ INSERT INTO materiales (id_material,id_pregunta,id_tipo_material,titulo,contenid
 --precondition-sql-check expectedResult:2 SELECT COUNT(*) FROM unidades WHERE (id_unidad=910005 AND id_objetivo=910005 AND id_asignatura IN (4,5)) OR (id_unidad=910006 AND id_objetivo=910006 AND id_asignatura IN (4,5))
 --precondition-sql-check expectedResult:0 SELECT COUNT(*) FROM unidades_cursos uc JOIN unidades u ON u.id_unidad=uc.id_unidad WHERE u.id_unidad IN (910005,910006) AND u.id_asignatura<>5
 UPDATE unidades SET id_asignatura=5 WHERE id_unidad IN (910005,910006) AND id_asignatura=4;
+
+--changeset practika:content-063-four-subject-image-units context:@dev
+-- Align the development catalog with the 16 supplied unit thumbnails.
+UPDATE unidades SET titulo='Cálculo y operaciones', descripcion='Resuelve operaciones con números naturales y aplica estrategias de cálculo en problemas cotidianos.' WHERE id_unidad=910001;
+UPDATE unidades SET titulo='Geometría', descripcion='Reconoce figuras planas, sus elementos y sus propiedades en el entorno.' WHERE id_unidad=910002;
+UPDATE unidades SET titulo='Lectura', descripcion='Comprende textos narrativos e informativos, identifica ideas y realiza inferencias.' WHERE id_unidad=910003;
+UPDATE unidades SET titulo='Escritura', descripcion='Planifica, redacta y revisa textos para comunicar ideas con claridad.' WHERE id_unidad=910004;
+UPDATE unidades SET titulo='Civilizaciones antiguas', descripcion='Explora las primeras civilizaciones, su organización y sus aportes culturales.' WHERE id_unidad=910005;
+UPDATE unidades SET titulo='Exploraciones', descripcion='Conoce viajes de exploración y analiza sus encuentros e impactos.' WHERE id_unidad=910006;
+UPDATE unidades SET titulo='Biología', descripcion='Investiga los seres vivos, sus necesidades, ciclos e interacciones.' WHERE id_unidad=910007;
+UPDATE unidades SET titulo='Microscopía', descripcion='Observa muestras y descubre estructuras pequeñas usando instrumentos científicos.' WHERE id_unidad=910008;
+INSERT INTO unidades (id_unidad,id_asignatura,id_objetivo,titulo,descripcion) VALUES
+(910009,1,910009,'Cuerpos geométricos','Identifica prismas, pirámides, cilindros, conos y esferas en objetos del entorno.'),
+(910010,1,910010,'Estadística','Organiza datos en tablas y gráficos, y comunica conclusiones sencillas.'),
+(910011,2,910011,'Literatura','Lee obras literarias y reconoce personajes, ambientes, temas y recursos.'),
+(910012,2,910012,'Comunicación','Expresa ideas de forma oral y escrita considerando propósito y audiencia.'),
+(910013,3,910013,'Química','Explora materiales, sus propiedades y los cambios que experimentan.'),
+(910014,3,910014,'Física','Investiga movimiento, fuerzas, energía y fenómenos físicos cotidianos.'),
+(910015,5,910015,'Roma antigua','Conoce la sociedad romana, su expansión y su legado en el mundo actual.'),
+(910016,5,910016,'Cartografía','Lee y crea mapas usando referencias, símbolos y escalas sencillas.');
+UPDATE evaluaciones SET titulo=REPLACE(titulo,'Números y operaciones hasta el 20','Cálculo y operaciones') WHERE id_unidad=910001;
+UPDATE evaluaciones SET titulo=REPLACE(titulo,'Figuras y posiciones a nuestro alrededor','Geometría') WHERE id_unidad=910002;
+UPDATE evaluaciones SET titulo=REPLACE(titulo,'Leemos el cuento de Luna y la semilla','Lectura') WHERE id_unidad=910003;
+UPDATE evaluaciones SET titulo=REPLACE(titulo,'Jugamos con sonidos, sílabas y oraciones','Escritura') WHERE id_unidad=910004;
+UPDATE evaluaciones SET titulo=REPLACE(titulo,'El tiempo en nuestra vida cotidiana','Civilizaciones antiguas') WHERE id_unidad=910005;
+UPDATE evaluaciones SET titulo=REPLACE(titulo,'Convivimos y cuidamos nuestra comunidad','Exploraciones') WHERE id_unidad=910006;
+UPDATE evaluaciones SET titulo=REPLACE(titulo,'Seres vivos y sus necesidades','Biología') WHERE id_unidad=910007;
+UPDATE evaluaciones SET titulo=REPLACE(titulo,'Nuestros sentidos y el cuidado del cuerpo','Microscopía') WHERE id_unidad=910008;
+
+--changeset practika:content-064-image-unit-learning-content context:@dev
+-- Add complete practice and assessment material for the eight new units.
+INSERT INTO evaluaciones (id_evaluacion,tipo,id_unidad,titulo,estado_activo,cantidad_intentos,fecha_aplicacion) VALUES
+(921001,'ACTIVIDAD',910009,'Exploramos: Cuerpos geométricos',1,3,NULL),(921002,'PRUEBA',910009,'Prueba: Cuerpos geométricos',1,2,TIMESTAMP(CURRENT_DATE(),'09:00:00')),
+(921003,'ACTIVIDAD',910010,'Exploramos: Estadística',1,3,NULL),(921004,'PRUEBA',910010,'Prueba: Estadística',1,2,TIMESTAMP(CURRENT_DATE(),'09:00:00')),
+(921005,'ACTIVIDAD',910011,'Exploramos: Literatura',1,3,NULL),(921006,'PRUEBA',910011,'Prueba: Literatura',1,2,TIMESTAMP(CURRENT_DATE(),'09:00:00')),
+(921007,'ACTIVIDAD',910012,'Exploramos: Comunicación',1,3,NULL),(921008,'PRUEBA',910012,'Prueba: Comunicación',1,2,TIMESTAMP(CURRENT_DATE(),'09:00:00')),
+(921009,'ACTIVIDAD',910013,'Exploramos: Química',1,3,NULL),(921010,'PRUEBA',910013,'Prueba: Química',1,2,TIMESTAMP(CURRENT_DATE(),'09:00:00')),
+(921011,'ACTIVIDAD',910014,'Exploramos: Física',1,3,NULL),(921012,'PRUEBA',910014,'Prueba: Física',1,2,TIMESTAMP(CURRENT_DATE(),'09:00:00')),
+(921013,'ACTIVIDAD',910015,'Exploramos: Roma antigua',1,3,NULL),(921014,'PRUEBA',910015,'Prueba: Roma antigua',1,2,TIMESTAMP(CURRENT_DATE(),'09:00:00')),
+(921015,'ACTIVIDAD',910016,'Exploramos: Cartografía',1,3,NULL),(921016,'PRUEBA',910016,'Prueba: Cartografía',1,2,TIMESTAMP(CURRENT_DATE(),'09:00:00'));
+
+INSERT INTO preguntas (id_pregunta,id_evaluacion,texto_pregunta,id_tipo_pregunta,puntaje_maximo)
+SELECT 931001+(e.id_evaluacion-921001)*4+q.qn,e.id_evaluacion,q.texto,t.id_tipo_pregunta,1
+FROM evaluaciones e
+JOIN (
+ SELECT 910009 unidad,1 qn,'¿Qué cuerpo tiene seis caras cuadradas iguales?' texto UNION ALL SELECT 910009,2,'¿Qué forma tiene una lata de bebida?' UNION ALL SELECT 910009,3,'¿Qué cuerpo tiene una superficie curva y dos bases circulares?' UNION ALL SELECT 910009,4,'¿Cuántas caras tiene un cubo?'
+ UNION ALL SELECT 910010,1,'En una encuesta, ¿para qué sirve una tabla de conteo?' UNION ALL SELECT 910010,2,'¿Qué gráfico permite comparar cantidades con barras?' UNION ALL SELECT 910010,3,'Si 8 de 12 estudiantes prefieren leer, ¿qué actividad fue la más elegida?' UNION ALL SELECT 910010,4,'¿Qué debe incluir un gráfico para entender sus datos?'
+ UNION ALL SELECT 910011,1,'¿Quién es el personaje que realiza las acciones principales de un relato?' UNION ALL SELECT 910011,2,'¿Qué elemento indica dónde ocurre una historia?' UNION ALL SELECT 910011,3,'¿Qué es una fábula?' UNION ALL SELECT 910011,4,'¿Qué información ayuda a inferir cómo se siente un personaje?'
+ UNION ALL SELECT 910012,1,'¿Qué conviene hacer antes de exponer un tema frente al curso?' UNION ALL SELECT 910012,2,'¿Qué respuesta demuestra escucha activa?' UNION ALL SELECT 910012,3,'¿Qué saludo es más adecuado en una carta formal?' UNION ALL SELECT 910012,4,'¿Para qué sirve ordenar las ideas al comunicar?'
+ UNION ALL SELECT 910013,1,'¿Cuál es un cambio de estado del agua líquida al vapor?' UNION ALL SELECT 910013,2,'¿Qué instrumento se usa para medir la masa?' UNION ALL SELECT 910013,3,'¿Qué propiedad permite distinguir un material de otro?' UNION ALL SELECT 910013,4,'¿Qué ocurre al mezclar agua y sal y revolver?'
+ UNION ALL SELECT 910014,1,'¿Qué fuerza hace caer los objetos hacia el suelo?' UNION ALL SELECT 910014,2,'¿Qué unidad se usa comúnmente para medir el tiempo?' UNION ALL SELECT 910014,3,'¿Qué puede cambiar una fuerza aplicada a un objeto?' UNION ALL SELECT 910014,4,'¿Cuál es una fuente natural de luz y energía térmica?'
+ UNION ALL SELECT 910015,1,'¿Cuál era la ciudad principal del Imperio romano?' UNION ALL SELECT 910015,2,'¿Cómo se llamaba la plaza pública central romana?' UNION ALL SELECT 910015,3,'¿Qué lengua hablaban los antiguos romanos?' UNION ALL SELECT 910015,4,'¿Qué construcción romana llevaba agua hacia las ciudades?'
+ UNION ALL SELECT 910016,1,'¿Qué representa la leyenda de un mapa?' UNION ALL SELECT 910016,2,'¿Qué punto cardinal suele ubicarse arriba en los mapas?' UNION ALL SELECT 910016,3,'¿Para qué sirve la escala de un mapa?' UNION ALL SELECT 910016,4,'¿Qué instrumento ayuda a orientarse señalando el norte?'
+) q ON q.unidad=e.id_unidad
+JOIN tipos_pregunta t ON t.codigo='SELECCION_UNICA'
+WHERE e.id_evaluacion BETWEEN 921001 AND 921016;
+
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta)
+SELECT 941001+(p.id_pregunta-931001)*4+n.opn,p.id_pregunta,
+CASE n.opn
+ WHEN 1 THEN CASE MOD(p.id_pregunta-931001,4)
+  WHEN 0 THEN CASE FLOOR((p.id_pregunta-931001)/8) WHEN 0 THEN 'Cubo' WHEN 1 THEN 'El título' WHEN 2 THEN 'El protagonista' WHEN 3 THEN 'Preparar y ordenar las ideas' WHEN 4 THEN 'Evaporación' WHEN 5 THEN 'Gravedad' WHEN 6 THEN 'Roma' ELSE 'Los símbolos y su significado' END
+  WHEN 1 THEN CASE FLOOR((p.id_pregunta-931001)/8) WHEN 0 THEN 'Cilindro' WHEN 1 THEN 'Gráfico de barras' WHEN 2 THEN 'El ambiente' WHEN 3 THEN 'Comprender el mensaje' WHEN 4 THEN 'Balanza' WHEN 5 THEN 'Minuto' WHEN 6 THEN 'El foro' ELSE 'El norte' END
+  WHEN 2 THEN CASE FLOOR((p.id_pregunta-931001)/8) WHEN 0 THEN 'Cilindro' WHEN 1 THEN 'Leer las preferencias' WHEN 2 THEN 'Un relato con moraleja' WHEN 3 THEN 'Escuchar y responder al tema' WHEN 4 THEN 'Color' WHEN 5 THEN 'La velocidad' WHEN 6 THEN 'Latín' ELSE 'Calcular distancias reales' END
+  ELSE CASE FLOOR((p.id_pregunta-931001)/8) WHEN 0 THEN '6' WHEN 1 THEN 'Título, categorías y datos' WHEN 2 THEN 'Las acciones y palabras del relato' WHEN 3 THEN 'Expresar ideas con claridad' WHEN 4 THEN 'Se forma una disolución' WHEN 5 THEN 'El movimiento o la forma' WHEN 6 THEN 'Acueducto' ELSE 'Brújula' END END
+ WHEN 2 THEN CASE MOD(p.id_pregunta-931001,4) WHEN 0 THEN 'Esfera' WHEN 1 THEN 'Solo para decorar' WHEN 2 THEN 'El autor' WHEN 3 THEN 'Hablar lo más rápido posible' WHEN 4 THEN 'Congelación' WHEN 5 THEN 'Magnetismo' WHEN 6 THEN 'El coliseo' WHEN 7 THEN 'La escala' END
+ WHEN 3 THEN CASE MOD(p.id_pregunta-931001,4) WHEN 0 THEN 'Cono' WHEN 1 THEN 'Un dibujo sin datos' WHEN 2 THEN 'El narrador' WHEN 3 THEN 'Cambiar de tema' WHEN 4 THEN 'Combustión' WHEN 5 THEN 'Electricidad' WHEN 6 THEN 'El senado' WHEN 7 THEN 'El clima' END
+ ELSE CASE MOD(p.id_pregunta-931001,4) WHEN 0 THEN 'Pirámide' WHEN 1 THEN 'Una lista sin cantidades' WHEN 2 THEN 'El ilustrador' WHEN 3 THEN 'Interrumpir para terminar antes' WHEN 4 THEN 'Fusión' WHEN 5 THEN 'Sonido' WHEN 6 THEN 'El acueducto' WHEN 7 THEN 'La población' END END,
+IF(n.opn=1,1,0)
+FROM preguntas p CROSS JOIN (SELECT 1 opn UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4) n
+WHERE p.id_pregunta BETWEEN 931001 AND 931064;
+
+INSERT INTO materiales (id_material,id_pregunta,id_tipo_material,titulo,contenido_texto,activo)
+SELECT 951001+(p.id_pregunta-931001),p.id_pregunta,t.id_tipo_material,
+CONCAT('Lee y observa: ',u.titulo),
+CONCAT('En esta actividad explorarás ',LOWER(u.titulo),'. Observa los ejemplos, relaciona la información con lo que ya sabes y explica cómo llegaste a tu respuesta.'),1
+FROM preguntas p JOIN evaluaciones e ON e.id_evaluacion=p.id_evaluacion
+JOIN unidades u ON u.id_unidad=e.id_unidad JOIN tipos_material t ON t.codigo='TEXTO'
+WHERE p.id_pregunta BETWEEN 931001 AND 931064;
+
 

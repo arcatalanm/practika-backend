@@ -157,3 +157,31 @@ ALTER TABLE docentes_asignaturas ADD COLUMN ambos_basicos BOOLEAN NOT NULL DEFAU
 
 --changeset practika:academic-013-mvp-teachers-first-and-second context:@dev
 UPDATE docentes_asignaturas SET ambos_basicos=1 WHERE run_profesor IN (12345679,12345671,12345682,12345683);
+
+--changeset practika:academic-014-four-subject-image-objectives context:@dev
+-- Keep the shared objective IDs aligned with ms-content's 16 unit fixtures.
+UPDATE objetivo_aprendizajes SET descripcion_objetivo='Resolver operaciones y problemas de cálculo con números naturales.' WHERE id_aprendizaje=910001;
+UPDATE objetivo_aprendizajes SET descripcion_objetivo='Reconocer figuras geométricas planas y sus propiedades.' WHERE id_aprendizaje=910002;
+UPDATE objetivo_aprendizajes SET descripcion_objetivo='Identificar cuerpos geométricos y describir sus características.' WHERE id_aprendizaje=910009;
+UPDATE objetivo_aprendizajes SET descripcion_objetivo='Organizar e interpretar datos mediante tablas y gráficos.' WHERE id_aprendizaje=910010;
+UPDATE objetivo_aprendizajes SET descripcion_objetivo='Comprender textos, localizar información y realizar inferencias.' WHERE id_aprendizaje=910003;
+UPDATE objetivo_aprendizajes SET descripcion_objetivo='Planificar y producir textos escritos claros para distintos propósitos.' WHERE id_aprendizaje=910004;
+UPDATE objetivo_aprendizajes SET descripcion_objetivo='Leer y analizar obras literarias, sus personajes y recursos.' WHERE id_aprendizaje=910011;
+UPDATE objetivo_aprendizajes SET descripcion_objetivo='Comunicar ideas oralmente y por escrito según el contexto.' WHERE id_aprendizaje=910012;
+UPDATE objetivo_aprendizajes SET descripcion_objetivo='Observar muestras y usar instrumentos para investigar el mundo natural.' WHERE id_aprendizaje=910008;
+UPDATE objetivo_aprendizajes SET descripcion_objetivo='Explicar propiedades y transformaciones de la materia.' WHERE id_aprendizaje=910013;
+UPDATE objetivo_aprendizajes SET descripcion_objetivo='Explicar características, ciclos e interacciones de los seres vivos.' WHERE id_aprendizaje=910007;
+UPDATE objetivo_aprendizajes SET descripcion_objetivo='Comprender fenómenos físicos mediante observación y modelos.' WHERE id_aprendizaje=910014;
+UPDATE objetivo_aprendizajes SET descripcion_objetivo='Describir civilizaciones antiguas y sus aportes culturales.' WHERE id_aprendizaje=910005;
+UPDATE objetivo_aprendizajes SET descripcion_objetivo='Reconocer la organización y legado de la antigua Roma.' WHERE id_aprendizaje=910015;
+UPDATE objetivo_aprendizajes SET descripcion_objetivo='Analizar exploraciones y encuentros entre sociedades.' WHERE id_aprendizaje=910006;
+UPDATE objetivo_aprendizajes SET descripcion_objetivo='Interpretar mapas y representar información espacial.' WHERE id_aprendizaje=910016;
+INSERT INTO objetivo_aprendizajes (id_aprendizaje,id_asignatura,codigo,descripcion_objetivo) VALUES
+(910009,1,'OA-MVP-MAT-03','Identificar cuerpos geométricos y describir sus características.'),
+(910010,1,'OA-MVP-MAT-04','Organizar e interpretar datos mediante tablas y gráficos.'),
+(910011,2,'OA-MVP-LEN-03','Leer y analizar obras literarias, sus personajes y recursos.'),
+(910012,2,'OA-MVP-LEN-04','Comunicar ideas oralmente y por escrito según el contexto.'),
+(910013,3,'OA-MVP-CIE-03','Explicar propiedades y transformaciones de la materia.'),
+(910014,3,'OA-MVP-CIE-04','Comprender fenómenos físicos mediante observación y modelos.'),
+(910015,5,'OA-MVP-HIS-03','Reconocer la organización y legado de la antigua Roma.'),
+(910016,5,'OA-MVP-HIS-04','Interpretar mapas y representar información espacial.');
