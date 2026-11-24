@@ -333,3 +333,34 @@ INSERT INTO matriculas (run_estudiante,id_seccion,fecha_inicio,activa,origen)
 SELECT u.run,u.id_seccion,CURRENT_TIMESTAMP(6),1,'DEMO' FROM usuarios u
 WHERE u.run IN (12345670,12345672,12345673,12345674,12345675,12345676,12345677,12345680,21999001,21999002,21999003,21999004,21999005,21999006,21999007)
 AND NOT EXISTS (SELECT 1 FROM matriculas m WHERE m.run_estudiante=u.run AND m.activa=1);
+
+--changeset practika:auth-016-reviewed-twenty-development-accounts context:@dev
+-- Exactly twenty development accounts; never delete an unrecognized account.
+--preconditions onFail:HALT onError:HALT
+--precondition-sql-check expectedResult:20 SELECT COUNT(*) FROM usuarios WHERE run IN (11111111,12345678,12345679,12345671,12345682,12345670,12345672,12345673,12345674,12345675,12345676,12345677,12345680,21999001,21999002,21999003,21999004,21999005,21999006,21999007)
+--precondition-sql-check expectedResult:0 SELECT COUNT(*) FROM usuarios WHERE run NOT IN (11111111,12345678,12345679,12345671,12345682,12345670,12345672,12345673,12345674,12345675,12345676,12345677,12345680,21999001,21999002,21999003,21999004,21999005,21999006,21999007) AND NOT ((run=12345683 AND email='profesor4@practika.local') OR (run BETWEEN 20999001 AND 20999284 AND email LIKE '%.demo@practika.example.test'))
+DELETE m FROM matriculas m JOIN usuarios u ON u.run=m.run_estudiante WHERE (u.run=12345683 AND u.email='profesor4@practika.local') OR (u.run BETWEEN 20999001 AND 20999284 AND u.email LIKE '%.demo@practika.example.test');
+DELETE FROM usuarios WHERE (run=12345683 AND email='profesor4@practika.local') OR (run BETWEEN 20999001 AND 20999284 AND email LIKE '%.demo@practika.example.test');
+UPDATE usuarios SET activo=1 WHERE run IN (11111111,12345678,12345679,12345671,12345682,12345670,12345672,12345673,12345674,12345675,12345676,12345677,12345680,21999001,21999002,21999003,21999004,21999005,21999006,21999007);
+UPDATE usuarios SET dv='1',id_rol=(SELECT id_rol FROM roles WHERE codigo='ADMIN') WHERE run=11111111;
+UPDATE usuarios SET dv='5',id_rol=(SELECT id_rol FROM roles WHERE codigo='UTP') WHERE run=12345678;
+UPDATE usuarios SET dv='3',id_rol=(SELECT id_rol FROM roles WHERE codigo='PROFESOR') WHERE run=12345679;
+UPDATE usuarios SET dv='8',id_rol=(SELECT id_rol FROM roles WHERE codigo='PROFESOR') WHERE run=12345671;
+UPDATE usuarios SET dv='3',id_rol=(SELECT id_rol FROM roles WHERE codigo='PROFESOR') WHERE run=12345682;
+UPDATE usuarios SET dv='K',id_rol=(SELECT id_rol FROM roles WHERE codigo='ESTUDIANTE') WHERE run=12345670;
+UPDATE usuarios SET dv='6',id_rol=(SELECT id_rol FROM roles WHERE codigo='ESTUDIANTE') WHERE run=12345672;
+UPDATE usuarios SET dv='4',id_rol=(SELECT id_rol FROM roles WHERE codigo='ESTUDIANTE') WHERE run=12345673;
+UPDATE usuarios SET dv='2',id_rol=(SELECT id_rol FROM roles WHERE codigo='ESTUDIANTE') WHERE run=12345674;
+UPDATE usuarios SET dv='0',id_rol=(SELECT id_rol FROM roles WHERE codigo='ESTUDIANTE') WHERE run=12345675;
+UPDATE usuarios SET dv='9',id_rol=(SELECT id_rol FROM roles WHERE codigo='ESTUDIANTE') WHERE run=12345676;
+UPDATE usuarios SET dv='7',id_rol=(SELECT id_rol FROM roles WHERE codigo='ESTUDIANTE') WHERE run=12345677;
+UPDATE usuarios SET dv='7',id_rol=(SELECT id_rol FROM roles WHERE codigo='ESTUDIANTE') WHERE run=12345680;
+UPDATE usuarios SET dv='4',id_rol=(SELECT id_rol FROM roles WHERE codigo='ESTUDIANTE') WHERE run=21999001;
+UPDATE usuarios SET dv='2',id_rol=(SELECT id_rol FROM roles WHERE codigo='ESTUDIANTE') WHERE run=21999002;
+UPDATE usuarios SET dv='0',id_rol=(SELECT id_rol FROM roles WHERE codigo='ESTUDIANTE') WHERE run=21999003;
+UPDATE usuarios SET dv='9',id_rol=(SELECT id_rol FROM roles WHERE codigo='ESTUDIANTE') WHERE run=21999004;
+UPDATE usuarios SET dv='7',id_rol=(SELECT id_rol FROM roles WHERE codigo='ESTUDIANTE') WHERE run=21999005;
+UPDATE usuarios SET dv='5',id_rol=(SELECT id_rol FROM roles WHERE codigo='ESTUDIANTE') WHERE run=21999006;
+UPDATE usuarios SET dv='3',id_rol=(SELECT id_rol FROM roles WHERE codigo='ESTUDIANTE') WHERE run=21999007;
+-- Keep passwords, names, the eight/seven student distribution and enrollment history.
+-- Application-created accounts are not reset; the precondition stops this dev-only cleanup if any exist.

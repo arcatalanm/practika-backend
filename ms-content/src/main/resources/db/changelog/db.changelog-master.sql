@@ -1221,4 +1221,793 @@ FROM preguntas p JOIN evaluaciones e ON e.id_evaluacion=p.id_evaluacion
 JOIN unidades u ON u.id_unidad=e.id_unidad JOIN tipos_material t ON t.codigo='TEXTO'
 WHERE p.id_pregunta BETWEEN 931001 AND 931064;
 
+--changeset practika:content-065-unit-catalog-visibility
+-- Retiring a catalog unit must not erase publications or student history.
+ALTER TABLE unidades ADD COLUMN activo BOOLEAN NOT NULL DEFAULT 1;
 
+--changeset practika:content-066-reviewed-questions-and-answers context:@dev
+-- Explicit question/answer associations replace the old modulo-based alternatives.
+-- Published snapshots and real submissions keep their original questions and options.
+--preconditions onFail:HALT onError:HALT
+--precondition-sql-check expectedResult:16 SELECT COUNT(*) FROM unidades WHERE id_unidad BETWEEN 910001 AND 910016
+--precondition-sql-check expectedResult:40 SELECT COUNT(*) FROM evaluaciones WHERE id_evaluacion IN (920001,920002,920003,920004,920005,920006,920007,920008,920009,920010,920011,920012,920013,920014,920015,920016,920017,920018,920019,920020,920021,920022,920023,920024,921001,921002,921003,921004,921005,921006,921007,921008,921009,921010,921011,921012,921013,921014,921015,921016)
+--precondition-sql-check expectedResult:160 SELECT COUNT(*) FROM preguntas WHERE id_pregunta IN (930001,930002,930003,930004,930005,930006,930007,930008,930009,930010,930011,930012,930013,930014,930015,930016,930017,930018,930019,930020,930021,930022,930023,930024,930025,930026,930027,930028,930029,930030,930031,930032,930033,930034,930035,930036,930037,930038,930039,930040,930041,930042,930043,930044,930045,930046,930047,930048,930049,930050,930051,930052,930053,930054,930055,930056,930057,930058,930059,930060,930061,930062,930063,930064,930065,930066,930067,930068,930069,930070,930071,930072,930073,930074,930075,930076,930077,930078,930079,930080,930081,930082,930083,930084,930085,930086,930087,930088,930089,930090,930091,930092,930093,930094,930095,930096,931002,931003,931004,931005,931006,931007,931008,931009,931010,931011,931012,931013,931014,931015,931016,931017,931018,931019,931020,931021,931022,931023,931024,931025,931026,931027,931028,931029,931030,931031,931032,931033,931034,931035,931036,931037,931038,931039,931040,931041,931042,931043,931044,931045,931046,931047,931048,931049,931050,931051,931052,931053,931054,931055,931056,931057,931058,931059,931060,931061,931062,931063,931064,931065)
+--precondition-sql-check expectedResult:0 SELECT COUNT(*) FROM opciones WHERE id_opcion BETWEEN 970001 AND 971000
+--precondition-sql-check expectedResult:4 SELECT COUNT(*) FROM tipos_pregunta WHERE codigo IN ('SELECCION_UNICA','SELECCION_MULTIPLE','VERDADERO_FALSO','DESARROLLO')
+-- Archive only the six original example units. Direct access and history remain available.
+UPDATE unidades SET activo=0 WHERE id_unidad BETWEEN 1 AND 6;
+-- Retire copies of obsolete fixtures; a teacher can select the reviewed source again.
+UPDATE evaluaciones_asignadas p JOIN evaluaciones e ON e.id_evaluacion=p.id_evaluacion SET p.activa=0
+WHERE e.id_evaluacion IN (920001,920002,920003,920004,920005,920006,920007,920008,920009,920010,920011,920012,920013,920014,920015,920016,920017,920018,920019,920020,920021,920022,920023,920024,921001,921002,921003,921004,921005,921006,921007,921008,921009,921010,921011,921012,921013,921014,921015,921016) OR (e.tipo='ACTIVIDAD' AND e.id_legacy BETWEEN 1 AND 13) OR (e.tipo='PRUEBA' AND e.id_legacy BETWEEN 1 AND 12);
+DELETE FROM opciones WHERE id_pregunta IN (930001,930002,930003,930004,930005,930006,930007,930008,930009,930010,930011,930012,930013,930014,930015,930016,930017,930018,930019,930020,930021,930022,930023,930024,930025,930026,930027,930028,930029,930030,930031,930032,930033,930034,930035,930036,930037,930038,930039,930040,930041,930042,930043,930044,930045,930046,930047,930048,930049,930050,930051,930052,930053,930054,930055,930056,930057,930058,930059,930060,930061,930062,930063,930064,930065,930066,930067,930068,930069,930070,930071,930072,930073,930074,930075,930076,930077,930078,930079,930080,930081,930082,930083,930084,930085,930086,930087,930088,930089,930090,930091,930092,930093,930094,930095,930096,931002,931003,931004,931005,931006,931007,931008,931009,931010,931011,931012,931013,931014,931015,931016,931017,931018,931019,931020,931021,931022,931023,931024,931025,931026,931027,931028,931029,931030,931031,931032,931033,931034,931035,931036,931037,931038,931039,931040,931041,931042,931043,931044,931045,931046,931047,931048,931049,931050,931051,931052,931053,931054,931055,931056,931057,931058,931059,931060,931061,931062,931063,931064,931065);
+-- Disable generated support only; user-uploaded resources are preserved. No support is inserted.
+UPDATE materiales SET activo=0 WHERE ((id_material BETWEEN 950001 AND 950096) OR (id_material BETWEEN 951001 AND 951100) OR (id_material BETWEEN 960001 AND 960016))
+AND id_pregunta IN (930001,930002,930003,930004,930005,930006,930007,930008,930009,930010,930011,930012,930013,930014,930015,930016,930017,930018,930019,930020,930021,930022,930023,930024,930025,930026,930027,930028,930029,930030,930031,930032,930033,930034,930035,930036,930037,930038,930039,930040,930041,930042,930043,930044,930045,930046,930047,930048,930049,930050,930051,930052,930053,930054,930055,930056,930057,930058,930059,930060,930061,930062,930063,930064,930065,930066,930067,930068,930069,930070,930071,930072,930073,930074,930075,930076,930077,930078,930079,930080,930081,930082,930083,930084,930085,930086,930087,930088,930089,930090,930091,930092,930093,930094,930095,930096,931002,931003,931004,931005,931006,931007,931008,931009,931010,931011,931012,931013,931014,931015,931016,931017,931018,931019,931020,931021,931022,931023,931024,931025,931026,931027,931028,931029,931030,931031,931032,931033,931034,931035,931036,931037,931038,931039,931040,931041,931042,931043,931044,931045,931046,931047,931048,931049,931050,931051,931052,931053,931054,931055,931056,931057,931058,931059,931060,931061,931062,931063,931064,931065);
+
+-- Matemática / Cálculo y operaciones
+UPDATE unidades SET id_asignatura=1,id_objetivo=910001,titulo='Cálculo y operaciones',descripcion='Resolver sumas, restas y problemas de cantidades hasta 20.',activo=1 WHERE id_unidad=910001;
+UPDATE evaluaciones SET titulo='Exploramos: Cálculo y operaciones',estado_activo=1,cantidad_intentos=3 WHERE id_evaluacion=920001;
+UPDATE evaluaciones SET titulo='Aplicamos: Cálculo y operaciones',estado_activo=1,cantidad_intentos=3 WHERE id_evaluacion=920002;
+UPDATE evaluaciones SET titulo='Prueba de cierre: Cálculo y operaciones',estado_activo=1,cantidad_intentos=2 WHERE id_evaluacion=920003;
+UPDATE preguntas SET id_evaluacion=920001,texto_pregunta='Ana tiene 6 manzanas y recibe 3 más. ¿Cuántas manzanas tiene ahora?',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_UNICA'),puntaje_maximo=1 WHERE id_pregunta=930001;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970001,930001,'3',0),
+(970002,930001,'8',0),
+(970003,930001,'10',0),
+(970004,930001,'9',1);
+UPDATE preguntas SET id_evaluacion=920001,texto_pregunta='Marca las operaciones cuyo resultado es 10.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_MULTIPLE'),puntaje_maximo=1 WHERE id_pregunta=930002;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970005,930002,'8 + 3',0),
+(970006,930002,'12 - 3',0),
+(970007,930002,'6 + 4',1),
+(970008,930002,'15 - 5',1);
+UPDATE preguntas SET id_evaluacion=920001,texto_pregunta='Si tienes 12 lápices y regalas 4, te quedan 8 lápices.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='VERDADERO_FALSO'),puntaje_maximo=1 WHERE id_pregunta=930003;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970009,930003,'Falso',0),
+(970010,930003,'Verdadero',1);
+UPDATE preguntas SET id_evaluacion=920001,texto_pregunta='Había 14 libros en una mesa. Se prestaron 5. ¿Cuántos quedan? Escribe la operación y el resultado.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='DESARROLLO'),puntaje_maximo=2 WHERE id_pregunta=930004;
+UPDATE preguntas SET id_evaluacion=920002,texto_pregunta='Hay 7 estudiantes en una fila y llegan otros 5. ¿Cuántos estudiantes hay en total?',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_UNICA'),puntaje_maximo=1 WHERE id_pregunta=930005;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970011,930005,'2',0),
+(970012,930005,'11',0),
+(970013,930005,'13',0),
+(970014,930005,'12',1);
+UPDATE preguntas SET id_evaluacion=920002,texto_pregunta='Marca los números mayores que 12 y menores que 16.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_MULTIPLE'),puntaje_maximo=1 WHERE id_pregunta=930006;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970015,930006,'12',0),
+(970016,930006,'16',0),
+(970017,930006,'13',1),
+(970018,930006,'15',1);
+UPDATE preguntas SET id_evaluacion=920002,texto_pregunta='La suma 9 + 4 tiene el mismo resultado que 4 + 9.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='VERDADERO_FALSO'),puntaje_maximo=1 WHERE id_pregunta=930007;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970019,930007,'Falso',0),
+(970020,930007,'Verdadero',1);
+UPDATE preguntas SET id_evaluacion=920002,texto_pregunta='En una caja había 8 fichas y en otra había 6. Explica cómo puedes encontrar el total.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='DESARROLLO'),puntaje_maximo=2 WHERE id_pregunta=930008;
+UPDATE preguntas SET id_evaluacion=920003,texto_pregunta='Un bus lleva 18 pasajeros y bajan 7. ¿Cuántos pasajeros quedan?',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_UNICA'),puntaje_maximo=1 WHERE id_pregunta=930009;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970021,930009,'25',0),
+(970022,930009,'10',0),
+(970023,930009,'12',0),
+(970024,930009,'11',1);
+UPDATE preguntas SET id_evaluacion=920003,texto_pregunta='Marca las restas cuyo resultado es 7.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_MULTIPLE'),puntaje_maximo=1 WHERE id_pregunta=930010;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970025,930010,'14 - 6',0),
+(970026,930010,'9 - 3',0),
+(970027,930010,'12 - 5',1),
+(970028,930010,'10 - 3',1);
+UPDATE preguntas SET id_evaluacion=920003,texto_pregunta='El resultado de 15 - 6 es 8.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='VERDADERO_FALSO'),puntaje_maximo=1 WHERE id_pregunta=930011;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970029,930011,'Falso',1),
+(970030,930011,'Verdadero',0);
+UPDATE preguntas SET id_evaluacion=920003,texto_pregunta='Sofía tenía algunas láminas. Recibió 4 y ahora tiene 13. ¿Cuántas tenía antes? Explica tu cálculo.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='DESARROLLO'),puntaje_maximo=2 WHERE id_pregunta=930012;
+
+-- Matemática / Geometría
+UPDATE unidades SET id_asignatura=1,id_objetivo=910002,titulo='Geometría',descripcion='Reconocer figuras planas y describir sus lados, vértices y posiciones.',activo=1 WHERE id_unidad=910002;
+UPDATE evaluaciones SET titulo='Exploramos: Geometría',estado_activo=1,cantidad_intentos=3 WHERE id_evaluacion=920004;
+UPDATE evaluaciones SET titulo='Aplicamos: Geometría',estado_activo=1,cantidad_intentos=3 WHERE id_evaluacion=920005;
+UPDATE evaluaciones SET titulo='Prueba de cierre: Geometría',estado_activo=1,cantidad_intentos=2 WHERE id_evaluacion=920006;
+UPDATE preguntas SET id_evaluacion=920004,texto_pregunta='¿Qué figura plana tiene tres lados rectos y tres vértices?',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_UNICA'),puntaje_maximo=1 WHERE id_pregunta=930013;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970031,930013,'Círculo',0),
+(970032,930013,'Rectángulo',0),
+(970033,930013,'Triángulo',1),
+(970034,930013,'Cuadrado',0);
+UPDATE preguntas SET id_evaluacion=920004,texto_pregunta='Marca las figuras planas que tienen cuatro lados.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_MULTIPLE'),puntaje_maximo=1 WHERE id_pregunta=930014;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970035,930014,'Círculo',0),
+(970036,930014,'Cuadrado',1),
+(970037,930014,'Rectángulo',1),
+(970038,930014,'Triángulo',0);
+UPDATE preguntas SET id_evaluacion=920004,texto_pregunta='Un círculo tiene cuatro vértices.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='VERDADERO_FALSO'),puntaje_maximo=1 WHERE id_pregunta=930015;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970039,930015,'Verdadero',0),
+(970040,930015,'Falso',1);
+UPDATE preguntas SET id_evaluacion=920004,texto_pregunta='Describe un cuadrado y un triángulo. ¿En qué se diferencian sus cantidades de lados?',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='DESARROLLO'),puntaje_maximo=2 WHERE id_pregunta=930016;
+UPDATE preguntas SET id_evaluacion=920005,texto_pregunta='¿Cuántos vértices tiene un rectángulo?',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_UNICA'),puntaje_maximo=1 WHERE id_pregunta=930017;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970041,930017,'5',0),
+(970042,930017,'6',0),
+(970043,930017,'4',1),
+(970044,930017,'3',0);
+UPDATE preguntas SET id_evaluacion=920005,texto_pregunta='Marca las afirmaciones verdaderas sobre un cuadrado.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_MULTIPLE'),puntaje_maximo=1 WHERE id_pregunta=930018;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970045,930018,'No tiene lados rectos',0),
+(970046,930018,'Tiene cuatro lados iguales',1),
+(970047,930018,'Tiene cuatro vértices',1),
+(970048,930018,'Tiene tres lados',0);
+UPDATE preguntas SET id_evaluacion=920005,texto_pregunta='Un triángulo sigue teniendo tres lados aunque lo giremos.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='VERDADERO_FALSO'),puntaje_maximo=1 WHERE id_pregunta=930019;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970049,930019,'Verdadero',1),
+(970050,930019,'Falso',0);
+UPDATE preguntas SET id_evaluacion=920005,texto_pregunta='Una pelota está debajo de una mesa y un libro está encima de ella. Describe dónde está cada objeto respecto de la mesa.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='DESARROLLO'),puntaje_maximo=2 WHERE id_pregunta=930020;
+UPDATE preguntas SET id_evaluacion=920006,texto_pregunta='Una figura tiene cuatro lados iguales y cuatro ángulos rectos. ¿Cuál es?',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_UNICA'),puntaje_maximo=1 WHERE id_pregunta=930021;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970051,930021,'Triángulo',0),
+(970052,930021,'Pentágono',0),
+(970053,930021,'Cuadrado',1),
+(970054,930021,'Círculo',0);
+UPDATE preguntas SET id_evaluacion=920006,texto_pregunta='Marca las figuras que tienen al menos un lado recto.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_MULTIPLE'),puntaje_maximo=1 WHERE id_pregunta=930022;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970055,930022,'Óvalo',0),
+(970056,930022,'Triángulo',1),
+(970057,930022,'Rectángulo',1),
+(970058,930022,'Círculo',0);
+UPDATE preguntas SET id_evaluacion=920006,texto_pregunta='Un rectángulo siempre tiene cinco vértices.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='VERDADERO_FALSO'),puntaje_maximo=1 WHERE id_pregunta=930023;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970059,930023,'Verdadero',0),
+(970060,930023,'Falso',1);
+UPDATE preguntas SET id_evaluacion=920006,texto_pregunta='Una ventana tiene forma rectangular. Indica cuántos lados y cuántos vértices tiene su contorno.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='DESARROLLO'),puntaje_maximo=2 WHERE id_pregunta=930024;
+
+-- Lenguaje / Lectura
+UPDATE unidades SET id_asignatura=2,id_objetivo=910003,titulo='Lectura',descripcion='Localizar información, ordenar acciones y realizar inferencias a partir de relatos breves.',activo=1 WHERE id_unidad=910003;
+UPDATE evaluaciones SET titulo='Exploramos: Lectura',estado_activo=1,cantidad_intentos=3 WHERE id_evaluacion=920007;
+UPDATE evaluaciones SET titulo='Aplicamos: Lectura',estado_activo=1,cantidad_intentos=3 WHERE id_evaluacion=920008;
+UPDATE evaluaciones SET titulo='Prueba de cierre: Lectura',estado_activo=1,cantidad_intentos=2 WHERE id_evaluacion=920009;
+UPDATE preguntas SET id_evaluacion=920007,texto_pregunta='Lee: «Luna encontró una semilla en el patio de la escuela y la sembró en una maceta». ¿Dónde encontró la semilla?',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_UNICA'),puntaje_maximo=1 WHERE id_pregunta=930025;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970061,930025,'En una plaza',0),
+(970062,930025,'En el patio de la escuela',1),
+(970063,930025,'En la biblioteca',0),
+(970064,930025,'En una cocina',0);
+UPDATE preguntas SET id_evaluacion=920007,texto_pregunta='Lee: «Luna regaba la semilla. Tomás acercó la maceta a una ventana». Marca las acciones mencionadas.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_MULTIPLE'),puntaje_maximo=1 WHERE id_pregunta=930026;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970065,930026,'Luna regaba la semilla',1),
+(970066,930026,'Tomás acercó la maceta a una ventana',1),
+(970067,930026,'Luna tiró la maceta',0),
+(970068,930026,'Tomás guardó la planta en un cajón',0);
+UPDATE preguntas SET id_evaluacion=920007,texto_pregunta='Lee: «Cada mañana, Luna revisaba su maceta». Según el texto, Luna revisaba la maceta por la noche.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='VERDADERO_FALSO'),puntaje_maximo=1 WHERE id_pregunta=930027;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970069,930027,'Falso',1),
+(970070,930027,'Verdadero',0);
+UPDATE preguntas SET id_evaluacion=920007,texto_pregunta='Lee: «Después de varios días de cuidados, apareció un brote. Luna sonrió». ¿Por qué crees que Luna sonrió? Usa una pista del texto.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='DESARROLLO'),puntaje_maximo=2 WHERE id_pregunta=930028;
+UPDATE preguntas SET id_evaluacion=920008,texto_pregunta='Lee: «Mateo tomó su paraguas porque comenzó a llover». ¿Por qué tomó el paraguas?',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_UNICA'),puntaje_maximo=1 WHERE id_pregunta=930029;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970071,930029,'Porque buscaba una pelota',0),
+(970072,930029,'Porque comenzó a llover',1),
+(970073,930029,'Porque hacía mucho calor',0),
+(970074,930029,'Porque iba a leer',0);
+UPDATE preguntas SET id_evaluacion=920008,texto_pregunta='Lee: «Eva y Leo ordenaron los cuentos de la biblioteca». Marca los nombres de los personajes.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_MULTIPLE'),puntaje_maximo=1 WHERE id_pregunta=930030;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970075,930030,'Eva',1),
+(970076,930030,'Leo',1),
+(970077,930030,'Biblioteca',0),
+(970078,930030,'Cuentos',0);
+UPDATE preguntas SET id_evaluacion=920008,texto_pregunta='Lee: «Primero Inés lavó una manzana y después la comió». Inés lavó la manzana antes de comerla.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='VERDADERO_FALSO'),puntaje_maximo=1 WHERE id_pregunta=930031;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970079,930031,'Falso',0),
+(970080,930031,'Verdadero',1);
+UPDATE preguntas SET id_evaluacion=920008,texto_pregunta='Lee: «Sara buscó su cuaderno. Lo encontró en la mochila y empezó a escribir». Cuenta las tres acciones en el orden en que ocurrieron.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='DESARROLLO'),puntaje_maximo=2 WHERE id_pregunta=930032;
+UPDATE preguntas SET id_evaluacion=920009,texto_pregunta='Lee: «El huerto estaba seco. Bruno lo regó y al día siguiente la tierra seguía húmeda». ¿Qué hizo Bruno?',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_UNICA'),puntaje_maximo=1 WHERE id_pregunta=930033;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970081,930033,'Cerró la biblioteca',0),
+(970082,930033,'Regó el huerto',1),
+(970083,930033,'Pintó la tierra',0),
+(970084,930033,'Arrancó las plantas',0);
+UPDATE preguntas SET id_evaluacion=920009,texto_pregunta='Lee: «En la plaza, Camila jugó con su hermano y luego ambos volvieron a casa». Marca las afirmaciones apoyadas por el texto.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_MULTIPLE'),puntaje_maximo=1 WHERE id_pregunta=930034;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970085,930034,'Camila estaba con su hermano',1),
+(970086,930034,'Después volvieron a casa',1),
+(970087,930034,'Jugaron en una playa',0),
+(970088,930034,'Volvieron a la escuela',0);
+UPDATE preguntas SET id_evaluacion=920009,texto_pregunta='Lee: «El gato se escondió al escuchar un ruido fuerte». El texto afirma que el gato se quedó dormido.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='VERDADERO_FALSO'),puntaje_maximo=1 WHERE id_pregunta=930035;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970089,930035,'Falso',1),
+(970090,930035,'Verdadero',0);
+UPDATE preguntas SET id_evaluacion=920009,texto_pregunta='Lee: «Se apagó la luz. Julia buscó una linterna para seguir leyendo». ¿Para qué buscó la linterna? Explica usando el relato.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='DESARROLLO'),puntaje_maximo=2 WHERE id_pregunta=930036;
+
+-- Lenguaje / Escritura
+UPDATE unidades SET id_asignatura=2,id_objetivo=910004,titulo='Escritura',descripcion='Escribir oraciones claras y revisar mayúsculas, puntuación y orden de las ideas.',activo=1 WHERE id_unidad=910004;
+UPDATE evaluaciones SET titulo='Exploramos: Escritura',estado_activo=1,cantidad_intentos=3 WHERE id_evaluacion=920010;
+UPDATE evaluaciones SET titulo='Aplicamos: Escritura',estado_activo=1,cantidad_intentos=3 WHERE id_evaluacion=920011;
+UPDATE evaluaciones SET titulo='Prueba de cierre: Escritura',estado_activo=1,cantidad_intentos=2 WHERE id_evaluacion=920012;
+UPDATE preguntas SET id_evaluacion=920010,texto_pregunta='¿Cuál oración comienza con mayúscula y termina con punto?',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_UNICA'),puntaje_maximo=1 WHERE id_pregunta=930037;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970091,930037,'Ana lee un cuento.',1),
+(970092,930037,'ana lee un cuento.',0),
+(970093,930037,'Ana lee un cuento',0),
+(970094,930037,'ana lee un cuento',0);
+UPDATE preguntas SET id_evaluacion=920010,texto_pregunta='Marca las acciones que ayudan a preparar un texto.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_MULTIPLE'),puntaje_maximo=1 WHERE id_pregunta=930038;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970095,930038,'Ordenar las ideas antes de escribir',1),
+(970096,930038,'Escribir palabras sin relación',0),
+(970097,930038,'Cambiar de tema en cada palabra',0),
+(970098,930038,'Pensar qué quiero comunicar',1);
+UPDATE preguntas SET id_evaluacion=920010,texto_pregunta='Una oración debe comunicar una idea comprensible.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='VERDADERO_FALSO'),puntaje_maximo=1 WHERE id_pregunta=930039;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970099,930039,'Verdadero',1),
+(970100,930039,'Falso',0);
+UPDATE preguntas SET id_evaluacion=920010,texto_pregunta='Ordena estas palabras y escribe una oración con mayúscula inicial y punto final: juega / Ana / en el patio.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='DESARROLLO'),puntaje_maximo=2 WHERE id_pregunta=930040;
+UPDATE preguntas SET id_evaluacion=920011,texto_pregunta='¿Qué palabra completa con sentido la oración «El perro bebe ___»?',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_UNICA'),puntaje_maximo=1 WHERE id_pregunta=930041;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970101,930041,'agua',1),
+(970102,930041,'sillas',0),
+(970103,930041,'cuadernos',0),
+(970104,930041,'ventanas',0);
+UPDATE preguntas SET id_evaluacion=920011,texto_pregunta='Marca las revisiones que mejoran una oración.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_MULTIPLE'),puntaje_maximo=1 WHERE id_pregunta=930042;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970105,930042,'Revisar la mayúscula inicial y el punto final',1),
+(970106,930042,'Borrar todas las vocales',0),
+(970107,930042,'Agregar palabras sin relación',0),
+(970108,930042,'Comprobar que las palabras se entiendan',1);
+UPDATE preguntas SET id_evaluacion=920011,texto_pregunta='La secuencia «mesa corre azul porque» comunica una idea completa y clara.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='VERDADERO_FALSO'),puntaje_maximo=1 WHERE id_pregunta=930043;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970109,930043,'Verdadero',0),
+(970110,930043,'Falso',1);
+UPDATE preguntas SET id_evaluacion=920011,texto_pregunta='Escribe dos oraciones que expliquen cómo cuidas tus útiles escolares.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='DESARROLLO'),puntaje_maximo=2 WHERE id_pregunta=930044;
+UPDATE preguntas SET id_evaluacion=920012,texto_pregunta='¿Cuál oración expresa una idea completa sobre un animal?',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_UNICA'),puntaje_maximo=1 WHERE id_pregunta=930045;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970111,930045,'El gato duerme en su cama.',1),
+(970112,930045,'El gato en.',0),
+(970113,930045,'Duerme su porque.',0),
+(970114,930045,'Cama el con.',0);
+UPDATE preguntas SET id_evaluacion=920012,texto_pregunta='Marca las palabras que permiten ordenar los pasos de una explicación.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_MULTIPLE'),puntaje_maximo=1 WHERE id_pregunta=930046;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970115,930046,'Después',1),
+(970116,930046,'Ventana',0),
+(970117,930046,'Zapato',0),
+(970118,930046,'Primero',1);
+UPDATE preguntas SET id_evaluacion=920012,texto_pregunta='Releer lo que escribimos ayuda a encontrar palabras que faltan.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='VERDADERO_FALSO'),puntaje_maximo=1 WHERE id_pregunta=930047;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970119,930047,'Verdadero',1),
+(970120,930047,'Falso',0);
+UPDATE preguntas SET id_evaluacion=920012,texto_pregunta='Escribe una invitación breve a leer en la biblioteca. Indica qué se hará, dónde y cuándo.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='DESARROLLO'),puntaje_maximo=2 WHERE id_pregunta=930048;
+
+-- Historia / Civilizaciones antiguas
+UPDATE unidades SET id_asignatura=5,id_objetivo=910005,titulo='Civilizaciones antiguas',descripcion='Relacionar civilizaciones antiguas con sus ríos, actividades y aportes culturales.',activo=1 WHERE id_unidad=910005;
+UPDATE evaluaciones SET titulo='Exploramos: Civilizaciones antiguas',estado_activo=1,cantidad_intentos=3 WHERE id_evaluacion=920013;
+UPDATE evaluaciones SET titulo='Aplicamos: Civilizaciones antiguas',estado_activo=1,cantidad_intentos=3 WHERE id_evaluacion=920014;
+UPDATE evaluaciones SET titulo='Prueba de cierre: Civilizaciones antiguas',estado_activo=1,cantidad_intentos=2 WHERE id_evaluacion=920015;
+UPDATE preguntas SET id_evaluacion=920013,texto_pregunta='¿Qué río fue fundamental para la agricultura del antiguo Egipto?',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_UNICA'),puntaje_maximo=1 WHERE id_pregunta=930049;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970121,930049,'Amazonas',0),
+(970122,930049,'Biobío',0),
+(970123,930049,'Mapocho',0),
+(970124,930049,'Nilo',1);
+UPDATE preguntas SET id_evaluacion=920013,texto_pregunta='Marca las actividades que realizaban las comunidades del antiguo Egipto.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_MULTIPLE'),puntaje_maximo=1 WHERE id_pregunta=930050;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970125,930050,'Viajar en aviones',0),
+(970126,930050,'Usar teléfonos móviles',0),
+(970127,930050,'Cultivar junto al río Nilo',1),
+(970128,930050,'Construir canales para conducir agua',1);
+UPDATE preguntas SET id_evaluacion=920013,texto_pregunta='La agricultura ayudó a que algunas comunidades se establecieran en un lugar.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='VERDADERO_FALSO'),puntaje_maximo=1 WHERE id_pregunta=930051;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970129,930051,'Falso',0),
+(970130,930051,'Verdadero',1);
+UPDATE preguntas SET id_evaluacion=920013,texto_pregunta='Explica una razón por la que vivir cerca de un río podía ayudar a una comunidad antigua.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='DESARROLLO'),puntaje_maximo=2 WHERE id_pregunta=930052;
+UPDATE preguntas SET id_evaluacion=920014,texto_pregunta='Mesopotamia se desarrolló entre dos ríos. ¿Cuáles eran?',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_UNICA'),puntaje_maximo=1 WHERE id_pregunta=930053;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970131,930053,'Nilo y Amazonas',0),
+(970132,930053,'Biobío y Loa',0),
+(970133,930053,'Sena y Támesis',0),
+(970134,930053,'Tigris y Éufrates',1);
+UPDATE preguntas SET id_evaluacion=920014,texto_pregunta='Marca las fuentes que provienen directamente de una civilización antigua.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_MULTIPLE'),puntaje_maximo=1 WHERE id_pregunta=930054;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970135,930054,'Una película de ficción actual',0),
+(970136,930054,'Una noticia sobre un viaje espacial actual',0),
+(970137,930054,'Restos de construcciones',1),
+(970138,930054,'Tablillas con escritura de esa época',1);
+UPDATE preguntas SET id_evaluacion=920014,texto_pregunta='Las civilizaciones antiguas usaban electricidad y computadores de la misma manera que nosotros.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='VERDADERO_FALSO'),puntaje_maximo=1 WHERE id_pregunta=930055;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970139,930055,'Falso',1),
+(970140,930055,'Verdadero',0);
+UPDATE preguntas SET id_evaluacion=920014,texto_pregunta='¿Para qué podía servir la escritura a una comunidad que almacenaba alimentos? Da un ejemplo.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='DESARROLLO'),puntaje_maximo=2 WHERE id_pregunta=930056;
+UPDATE preguntas SET id_evaluacion=920015,texto_pregunta='¿Cuál de estos aportes permite dejar registros escritos de acuerdos o cantidades?',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_UNICA'),puntaje_maximo=1 WHERE id_pregunta=930057;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970141,930057,'El avión',0),
+(970142,930057,'El teléfono móvil',0),
+(970143,930057,'El semáforo eléctrico',0),
+(970144,930057,'La escritura',1);
+UPDATE preguntas SET id_evaluacion=920015,texto_pregunta='Marca las condiciones que favorecieron el cultivo en comunidades antiguas.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_MULTIPLE'),puntaje_maximo=1 WHERE id_pregunta=930058;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970145,930058,'Ausencia total de agua',0),
+(970146,930058,'Imposibilidad de cuidar los cultivos',0),
+(970147,930058,'Disponibilidad de agua',1),
+(970148,930058,'Tierras adecuadas para sembrar',1);
+UPDATE preguntas SET id_evaluacion=920015,texto_pregunta='Un objeto antiguo puede entregar información sobre la vida de quienes lo utilizaron.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='VERDADERO_FALSO'),puntaje_maximo=1 WHERE id_pregunta=930059;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970149,930059,'Falso',0),
+(970150,930059,'Verdadero',1);
+UPDATE preguntas SET id_evaluacion=920015,texto_pregunta='Un grupo encuentra una vasija antigua. Explica qué podría enseñar sobre esa comunidad y por qué no basta con imaginar su uso.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='DESARROLLO'),puntaje_maximo=2 WHERE id_pregunta=930060;
+
+-- Historia / Exploraciones
+UPDATE unidades SET id_asignatura=5,id_objetivo=910006,titulo='Exploraciones',descripcion='Reconocer instrumentos de navegación y describir encuentros entre sociedades durante las exploraciones.',activo=1 WHERE id_unidad=910006;
+UPDATE evaluaciones SET titulo='Exploramos: Exploraciones',estado_activo=1,cantidad_intentos=3 WHERE id_evaluacion=920016;
+UPDATE evaluaciones SET titulo='Aplicamos: Exploraciones',estado_activo=1,cantidad_intentos=3 WHERE id_evaluacion=920017;
+UPDATE evaluaciones SET titulo='Prueba de cierre: Exploraciones',estado_activo=1,cantidad_intentos=2 WHERE id_evaluacion=920018;
+UPDATE preguntas SET id_evaluacion=920016,texto_pregunta='¿Qué instrumento ayuda a orientarse al indicar la dirección del norte magnético?',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_UNICA'),puntaje_maximo=1 WHERE id_pregunta=930061;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970151,930061,'Termómetro',0),
+(970152,930061,'Reloj de arena',0),
+(970153,930061,'Brújula',1),
+(970154,930061,'Balanza',0);
+UPDATE preguntas SET id_evaluacion=920016,texto_pregunta='Marca elementos útiles para planificar un viaje marítimo de exploración.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_MULTIPLE'),puntaje_maximo=1 WHERE id_pregunta=930062;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970155,930062,'Salir sin conocer el destino ni preparar el barco',0),
+(970156,930062,'Mapas de las costas conocidas',1),
+(970157,930062,'Provisiones de agua y alimentos',1),
+(970158,930062,'Un itinerario sin considerar distancias',0);
+UPDATE preguntas SET id_evaluacion=920016,texto_pregunta='América ya estaba habitada por diversos pueblos antes de la llegada de las expediciones europeas.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='VERDADERO_FALSO'),puntaje_maximo=1 WHERE id_pregunta=930063;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970159,930063,'Verdadero',1),
+(970160,930063,'Falso',0);
+UPDATE preguntas SET id_evaluacion=920016,texto_pregunta='Explica por qué una tripulación necesitaba planificar sus provisiones antes de un viaje largo.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='DESARROLLO'),puntaje_maximo=2 WHERE id_pregunta=930064;
+UPDATE preguntas SET id_evaluacion=920017,texto_pregunta='¿Qué océano cruzó la expedición de Cristóbal Colón al viajar desde Europa hasta América en 1492?',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_UNICA'),puntaje_maximo=1 WHERE id_pregunta=930065;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970161,930065,'Ártico',0),
+(970162,930065,'Antártico',0),
+(970163,930065,'Atlántico',1),
+(970164,930065,'Índico',0);
+UPDATE preguntas SET id_evaluacion=920017,texto_pregunta='Marca afirmaciones que reconocen la diversidad de los encuentros entre europeos y pueblos americanos.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_MULTIPLE'),puntaje_maximo=1 WHERE id_pregunta=930066;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970165,930066,'Todos los pueblos tenían las mismas costumbres',0),
+(970166,930066,'Los pueblos americanos tenían culturas propias',1),
+(970167,930066,'Los encuentros produjeron intercambios y también conflictos',1),
+(970168,930066,'América estaba deshabitada',0);
+UPDATE preguntas SET id_evaluacion=920017,texto_pregunta='Todos los encuentros entre expediciones europeas y pueblos americanos fueron pacíficos.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='VERDADERO_FALSO'),puntaje_maximo=1 WHERE id_pregunta=930067;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970169,930067,'Verdadero',0),
+(970170,930067,'Falso',1);
+UPDATE preguntas SET id_evaluacion=920017,texto_pregunta='¿Por qué es incorrecto decir que los exploradores llegaron a un continente sin habitantes al referirse a América?',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='DESARROLLO'),puntaje_maximo=2 WHERE id_pregunta=930068;
+UPDATE preguntas SET id_evaluacion=920018,texto_pregunta='¿Qué documento podía ayudar a una tripulación a reconocer una costa y planificar su ruta?',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_UNICA'),puntaje_maximo=1 WHERE id_pregunta=930069;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970171,930069,'Un catálogo de muebles',0),
+(970172,930069,'Una lista de alumnos',0),
+(970173,930069,'Un mapa náutico',1),
+(970174,930069,'Una receta de cocina',0);
+UPDATE preguntas SET id_evaluacion=920018,texto_pregunta='Marca preguntas que ayudan a estudiar un viaje de exploración.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_MULTIPLE'),puntaje_maximo=1 WHERE id_pregunta=930070;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970175,930070,'¿Qué aeropuerto usó el barco?',0),
+(970176,930070,'¿Qué ruta siguió la expedición?',1),
+(970177,930070,'¿Con qué pueblos se encontró?',1),
+(970178,930070,'¿Cuántos teléfonos móviles llevó en 1492?',0);
+UPDATE preguntas SET id_evaluacion=920018,texto_pregunta='Comparar relatos de distintas personas ayuda a comprender un encuentro histórico desde más de una perspectiva.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='VERDADERO_FALSO'),puntaje_maximo=1 WHERE id_pregunta=930071;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970179,930071,'Verdadero',1),
+(970180,930071,'Falso',0);
+UPDATE preguntas SET id_evaluacion=920018,texto_pregunta='Menciona una utilidad de los mapas y una de la brújula durante un viaje marítimo.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='DESARROLLO'),puntaje_maximo=2 WHERE id_pregunta=930072;
+
+-- Ciencias / Biología
+UPDATE unidades SET id_asignatura=3,id_objetivo=910007,titulo='Biología',descripcion='Reconocer seres vivos, sus necesidades y relaciones con el ambiente.',activo=1 WHERE id_unidad=910007;
+UPDATE evaluaciones SET titulo='Exploramos: Biología',estado_activo=1,cantidad_intentos=3 WHERE id_evaluacion=920019;
+UPDATE evaluaciones SET titulo='Aplicamos: Biología',estado_activo=1,cantidad_intentos=3 WHERE id_evaluacion=920020;
+UPDATE evaluaciones SET titulo='Prueba de cierre: Biología',estado_activo=1,cantidad_intentos=2 WHERE id_evaluacion=920021;
+UPDATE preguntas SET id_evaluacion=920019,texto_pregunta='¿Cuál de estos elementos es un ser vivo?',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_UNICA'),puntaje_maximo=1 WHERE id_pregunta=930073;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970181,930073,'Una pelota',0),
+(970182,930073,'Un árbol',1),
+(970183,930073,'Una piedra',0),
+(970184,930073,'Una banca',0);
+UPDATE preguntas SET id_evaluacion=920019,texto_pregunta='Marca necesidades básicas de un gato.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_MULTIPLE'),puntaje_maximo=1 WHERE id_pregunta=930074;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970185,930074,'Agua',1),
+(970186,930074,'Alimento adecuado',1),
+(970187,930074,'Un teléfono',0),
+(970188,930074,'Un cuaderno',0);
+UPDATE preguntas SET id_evaluacion=920019,texto_pregunta='Las plantas son seres vivos aunque no caminen de un lugar a otro.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='VERDADERO_FALSO'),puntaje_maximo=1 WHERE id_pregunta=930075;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970189,930075,'Falso',0),
+(970190,930075,'Verdadero',1);
+UPDATE preguntas SET id_evaluacion=920019,texto_pregunta='Explica una diferencia entre una planta viva y una planta de plástico.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='DESARROLLO'),puntaje_maximo=2 WHERE id_pregunta=930076;
+UPDATE preguntas SET id_evaluacion=920020,texto_pregunta='Una planta crece en una maceta y su tierra está seca. ¿Qué cuidado necesita?',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_UNICA'),puntaje_maximo=1 WHERE id_pregunta=930077;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970191,930077,'Encerrarla sin luz',0),
+(970192,930077,'Riego con una cantidad adecuada de agua',1),
+(970193,930077,'Pintar sus hojas',0),
+(970194,930077,'Quitarle toda la tierra',0);
+UPDATE preguntas SET id_evaluacion=920020,texto_pregunta='Marca relaciones de alimentación entre seres vivos.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_MULTIPLE'),puntaje_maximo=1 WHERE id_pregunta=930078;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970195,930078,'Un conejo come pasto',1),
+(970196,930078,'Un zorro come un conejo',1),
+(970197,930078,'Una piedra come pasto',0),
+(970198,930078,'Una banca alimenta a una nube',0);
+UPDATE preguntas SET id_evaluacion=920020,texto_pregunta='Una semilla viable puede germinar si tiene las condiciones adecuadas.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='VERDADERO_FALSO'),puntaje_maximo=1 WHERE id_pregunta=930079;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970199,930079,'Falso',0),
+(970200,930079,'Verdadero',1);
+UPDATE preguntas SET id_evaluacion=920020,texto_pregunta='Describe dos cuidados que necesita una planta y explica para qué sirve uno de ellos.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='DESARROLLO'),puntaje_maximo=2 WHERE id_pregunta=930080;
+UPDATE preguntas SET id_evaluacion=920021,texto_pregunta='¿Cuál es un ejemplo de hábitat de un pez de río?',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_UNICA'),puntaje_maximo=1 WHERE id_pregunta=930081;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970201,930081,'Una repisa sin agua',0),
+(970202,930081,'Un río con condiciones adecuadas para esa especie',1),
+(970203,930081,'Un cajón seco',0),
+(970204,930081,'Una carretera',0);
+UPDATE preguntas SET id_evaluacion=920021,texto_pregunta='Marca acciones que ayudan a cuidar los seres vivos de un huerto.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_MULTIPLE'),puntaje_maximo=1 WHERE id_pregunta=930082;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970205,930082,'Regar según las necesidades de las plantas',1),
+(970206,930082,'Evitar arrojar basura en el huerto',1),
+(970207,930082,'Arrancar todas las plantas',0),
+(970208,930082,'Dejar residuos sobre los cultivos',0);
+UPDATE preguntas SET id_evaluacion=920021,texto_pregunta='Todos los animales comen exactamente el mismo tipo de alimento.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='VERDADERO_FALSO'),puntaje_maximo=1 WHERE id_pregunta=930083;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970209,930083,'Falso',1),
+(970210,930083,'Verdadero',0);
+UPDATE preguntas SET id_evaluacion=920021,texto_pregunta='¿Qué podría ocurrir con una planta si pasa mucho tiempo sin recibir agua? Explica tu respuesta.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='DESARROLLO'),puntaje_maximo=2 WHERE id_pregunta=930084;
+
+-- Ciencias / Microscopía
+UPDATE unidades SET id_asignatura=3,id_objetivo=910008,titulo='Microscopía',descripcion='Reconocer las funciones del microscopio y describir observaciones de muestras.',activo=1 WHERE id_unidad=910008;
+UPDATE evaluaciones SET titulo='Exploramos: Microscopía',estado_activo=1,cantidad_intentos=3 WHERE id_evaluacion=920022;
+UPDATE evaluaciones SET titulo='Aplicamos: Microscopía',estado_activo=1,cantidad_intentos=3 WHERE id_evaluacion=920023;
+UPDATE evaluaciones SET titulo='Prueba de cierre: Microscopía',estado_activo=1,cantidad_intentos=2 WHERE id_evaluacion=920024;
+UPDATE preguntas SET id_evaluacion=920022,texto_pregunta='¿Para qué sirve principalmente un microscopio óptico escolar?',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_UNICA'),puntaje_maximo=1 WHERE id_pregunta=930085;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970211,930085,'Observar detalles demasiado pequeños para distinguirlos a simple vista',1),
+(970212,930085,'Medir la temperatura del aire',0),
+(970213,930085,'Pesar una muestra',0),
+(970214,930085,'Orientarse hacia el norte',0);
+UPDATE preguntas SET id_evaluacion=920022,texto_pregunta='Marca partes del microscopio relacionadas con el aumento de la imagen.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_MULTIPLE'),puntaje_maximo=1 WHERE id_pregunta=930086;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970215,930086,'Objetivos',1),
+(970216,930086,'Cable de un teléfono',0),
+(970217,930086,'Brújula',0),
+(970218,930086,'Ocular',1);
+UPDATE preguntas SET id_evaluacion=920022,texto_pregunta='Un microscopio óptico permite observar detalles que nuestros ojos solos no distinguen.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='VERDADERO_FALSO'),puntaje_maximo=1 WHERE id_pregunta=930087;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970219,930087,'Verdadero',1),
+(970220,930087,'Falso',0);
+UPDATE preguntas SET id_evaluacion=920022,texto_pregunta='Describe una diferencia entre observar una hoja a simple vista y observar una muestra de ella con un microscopio.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='DESARROLLO'),puntaje_maximo=2 WHERE id_pregunta=930088;
+UPDATE preguntas SET id_evaluacion=920023,texto_pregunta='¿Cómo se llama la lámina de vidrio donde se coloca una muestra para observarla?',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_UNICA'),puntaje_maximo=1 WHERE id_pregunta=930089;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970221,930089,'Portaobjetos',1),
+(970222,930089,'Brújula',0),
+(970223,930089,'Balanza',0),
+(970224,930089,'Cronómetro',0);
+UPDATE preguntas SET id_evaluacion=920023,texto_pregunta='Marca prácticas adecuadas al usar un microscopio escolar.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_MULTIPLE'),puntaje_maximo=1 WHERE id_pregunta=930090;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970225,930090,'Manipular las muestras y lentes con cuidado',1),
+(970226,930090,'Tocar las lentes con los dedos sucios',0),
+(970227,930090,'Forzar los tornillos cuando no giran',0),
+(970228,930090,'Seguir las indicaciones del docente',1);
+UPDATE preguntas SET id_evaluacion=920023,texto_pregunta='Los objetivos del microscopio deben golpearse contra la muestra para enfocar.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='VERDADERO_FALSO'),puntaje_maximo=1 WHERE id_pregunta=930091;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970229,930091,'Verdadero',0),
+(970230,930091,'Falso',1);
+UPDATE preguntas SET id_evaluacion=920023,texto_pregunta='Una observación muestra pequeñas estructuras en una muestra de cebolla. ¿Por qué conviene dibujarlas y anotar lo observado?',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='DESARROLLO'),puntaje_maximo=2 WHERE id_pregunta=930092;
+UPDATE preguntas SET id_evaluacion=920024,texto_pregunta='Un microscopio tiene un ocular de 10 aumentos y un objetivo de 4 aumentos. ¿Cuál es el aumento total?',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_UNICA'),puntaje_maximo=1 WHERE id_pregunta=930093;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970231,930093,'40 aumentos',1),
+(970232,930093,'14 aumentos',0),
+(970233,930093,'6 aumentos',0),
+(970234,930093,'104 aumentos',0);
+UPDATE preguntas SET id_evaluacion=920024,texto_pregunta='Marca datos útiles para registrar una observación al microscopio.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_MULTIPLE'),puntaje_maximo=1 WHERE id_pregunta=930094;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970235,930094,'El aumento utilizado',1),
+(970236,930094,'Una respuesta inventada antes de observar',0),
+(970237,930094,'Una descripción de otra muestra que no se examinó',0),
+(970238,930094,'El nombre de la muestra',1);
+UPDATE preguntas SET id_evaluacion=920024,texto_pregunta='Una conclusión debe basarse en lo que se observó y no en detalles inventados.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='VERDADERO_FALSO'),puntaje_maximo=1 WHERE id_pregunta=930095;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970239,930095,'Verdadero',1),
+(970240,930095,'Falso',0);
+UPDATE preguntas SET id_evaluacion=920024,texto_pregunta='Dos estudiantes observan la misma muestra con aumentos distintos. Menciona un dato que deberían registrar para poder comparar sus observaciones.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='DESARROLLO'),puntaje_maximo=2 WHERE id_pregunta=930096;
+
+-- Matemática / Cuerpos geométricos
+UPDATE unidades SET id_asignatura=1,id_objetivo=910009,titulo='Cuerpos geométricos',descripcion='Distinguir cuerpos geométricos y describir sus caras, aristas y vértices.',activo=1 WHERE id_unidad=910009;
+UPDATE evaluaciones SET titulo='Exploramos: Cuerpos geométricos',estado_activo=1,cantidad_intentos=3 WHERE id_evaluacion=921001;
+UPDATE evaluaciones SET titulo='Prueba de cierre: Cuerpos geométricos',estado_activo=1,cantidad_intentos=2 WHERE id_evaluacion=921002;
+UPDATE preguntas SET id_evaluacion=921001,texto_pregunta='¿Qué cuerpo geométrico tiene seis caras cuadradas iguales?',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_UNICA'),puntaje_maximo=1 WHERE id_pregunta=931002;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970241,931002,'Esfera',0),
+(970242,931002,'Cono',0),
+(970243,931002,'Cilindro',0),
+(970244,931002,'Cubo',1);
+UPDATE preguntas SET id_evaluacion=921001,texto_pregunta='Marca los cuerpos que tienen al menos una base circular plana.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_MULTIPLE'),puntaje_maximo=1 WHERE id_pregunta=931003;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970245,931003,'Cubo',0),
+(970246,931003,'Pirámide de base cuadrada',0),
+(970247,931003,'Cilindro',1),
+(970248,931003,'Cono',1);
+UPDATE preguntas SET id_evaluacion=921001,texto_pregunta='Una esfera tiene una superficie curva y no tiene caras planas.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='VERDADERO_FALSO'),puntaje_maximo=1 WHERE id_pregunta=931004;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970249,931004,'Falso',0),
+(970250,931004,'Verdadero',1);
+UPDATE preguntas SET id_evaluacion=921001,texto_pregunta='Una lata cerrada tiene forma de cilindro. Describe sus dos bases y su superficie lateral.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='DESARROLLO'),puntaje_maximo=2 WHERE id_pregunta=931005;
+UPDATE preguntas SET id_evaluacion=921002,texto_pregunta='¿Cuántos vértices tiene un cubo?',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_UNICA'),puntaje_maximo=1 WHERE id_pregunta=931006;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970251,931006,'4',0),
+(970252,931006,'6',0),
+(970253,931006,'12',0),
+(970254,931006,'8',1);
+UPDATE preguntas SET id_evaluacion=921002,texto_pregunta='Marca propiedades de una pirámide de base cuadrada.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_MULTIPLE'),puntaje_maximo=1 WHERE id_pregunta=931007;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970255,931007,'Tiene dos bases circulares',0),
+(970256,931007,'Todas sus caras son círculos',0),
+(970257,931007,'Tiene una base cuadrada',1),
+(970258,931007,'Sus caras laterales son triángulos',1);
+UPDATE preguntas SET id_evaluacion=921002,texto_pregunta='Un cubo tiene doce aristas.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='VERDADERO_FALSO'),puntaje_maximo=1 WHERE id_pregunta=931008;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970259,931008,'Falso',0),
+(970260,931008,'Verdadero',1);
+UPDATE preguntas SET id_evaluacion=921002,texto_pregunta='Compara un cubo con una esfera. Menciona una diferencia que permita distinguirlos.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='DESARROLLO'),puntaje_maximo=2 WHERE id_pregunta=931009;
+
+-- Matemática / Estadística
+UPDATE unidades SET id_asignatura=1,id_objetivo=910010,titulo='Estadística',descripcion='Organizar e interpretar cantidades en tablas y gráficos sencillos.',activo=1 WHERE id_unidad=910010;
+UPDATE evaluaciones SET titulo='Exploramos: Estadística',estado_activo=1,cantidad_intentos=3 WHERE id_evaluacion=921003;
+UPDATE evaluaciones SET titulo='Prueba de cierre: Estadística',estado_activo=1,cantidad_intentos=2 WHERE id_evaluacion=921004;
+UPDATE preguntas SET id_evaluacion=921003,texto_pregunta='Una encuesta registra 8 votos por lectura, 5 por deporte y 3 por dibujo. ¿Qué actividad recibió más votos?',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_UNICA'),puntaje_maximo=1 WHERE id_pregunta=931010;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970261,931010,'Dibujo',0),
+(970262,931010,'Todas recibieron lo mismo',0),
+(970263,931010,'Lectura',1),
+(970264,931010,'Deporte',0);
+UPDATE preguntas SET id_evaluacion=921003,texto_pregunta='En una tabla hay 4 perros, 7 gatos y 2 conejos. Marca las afirmaciones correctas.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_MULTIPLE'),puntaje_maximo=1 WHERE id_pregunta=931011;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970265,931011,'Hay igual cantidad de perros y gatos',0),
+(970266,931011,'Hay más gatos que perros',1),
+(970267,931011,'Hay menos conejos que perros',1),
+(970268,931011,'Hay más conejos que gatos',0);
+UPDATE preguntas SET id_evaluacion=921003,texto_pregunta='Un gráfico de barras puede servir para comparar cantidades de distintas categorías.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='VERDADERO_FALSO'),puntaje_maximo=1 WHERE id_pregunta=931012;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970269,931012,'Verdadero',1),
+(970270,931012,'Falso',0);
+UPDATE preguntas SET id_evaluacion=921003,texto_pregunta='En una encuesta, 6 estudiantes eligieron manzana y 4 eligieron pera. ¿Cuántos estudiantes respondieron? Explica cómo lo sabes.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='DESARROLLO'),puntaje_maximo=2 WHERE id_pregunta=931013;
+UPDATE preguntas SET id_evaluacion=921004,texto_pregunta='Una tabla muestra 3 votos por rojo, 9 por azul y 5 por verde. ¿Cuál color recibió menos votos?',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_UNICA'),puntaje_maximo=1 WHERE id_pregunta=931014;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970271,931014,'Verde',0),
+(970272,931014,'Todos recibieron lo mismo',0),
+(970273,931014,'Rojo',1),
+(970274,931014,'Azul',0);
+UPDATE preguntas SET id_evaluacion=921004,texto_pregunta='Marca elementos que ayudan a entender un gráfico de barras.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_MULTIPLE'),puntaje_maximo=1 WHERE id_pregunta=931015;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970275,931015,'Categorías sin identificar',0),
+(970276,931015,'Un título que indique qué datos representa',1),
+(970277,931015,'Nombres de las categorías y una escala numérica',1),
+(970278,931015,'Barras sin relación con los datos',0);
+UPDATE preguntas SET id_evaluacion=921004,texto_pregunta='Si una barra llega al valor 8 y otra al valor 5 en la misma escala, la primera representa tres unidades más.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='VERDADERO_FALSO'),puntaje_maximo=1 WHERE id_pregunta=931016;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970279,931016,'Verdadero',1),
+(970280,931016,'Falso',0);
+UPDATE preguntas SET id_evaluacion=921004,texto_pregunta='En una tabla hay 7 votos por fútbol y 3 por básquetbol. ¿Cuántos votos más obtuvo fútbol? Escribe la operación.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='DESARROLLO'),puntaje_maximo=2 WHERE id_pregunta=931017;
+
+-- Lenguaje / Literatura
+UPDATE unidades SET id_asignatura=2,id_objetivo=910011,titulo='Literatura',descripcion='Reconocer personajes, ambientes y recursos de textos literarios breves.',activo=1 WHERE id_unidad=910011;
+UPDATE evaluaciones SET titulo='Exploramos: Literatura',estado_activo=1,cantidad_intentos=3 WHERE id_evaluacion=921005;
+UPDATE evaluaciones SET titulo='Prueba de cierre: Literatura',estado_activo=1,cantidad_intentos=2 WHERE id_evaluacion=921006;
+UPDATE preguntas SET id_evaluacion=921005,texto_pregunta='¿Cómo se llama el personaje que ocupa el lugar central en las acciones principales de un relato?',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_UNICA'),puntaje_maximo=1 WHERE id_pregunta=931018;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970281,931018,'Lector',0),
+(970282,931018,'Protagonista',1),
+(970283,931018,'Autor',0),
+(970284,931018,'Ilustrador',0);
+UPDATE preguntas SET id_evaluacion=921005,texto_pregunta='Lee: «La zorra habló con el cuervo para conseguir su queso». Marca los personajes del fragmento.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_MULTIPLE'),puntaje_maximo=1 WHERE id_pregunta=931019;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970285,931019,'La zorra',1),
+(970286,931019,'El cuervo',1),
+(970287,931019,'El queso',0),
+(970288,931019,'El árbol que no se menciona',0);
+UPDATE preguntas SET id_evaluacion=921005,texto_pregunta='Una fábula puede presentar animales que hablan y una enseñanza o moraleja.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='VERDADERO_FALSO'),puntaje_maximo=1 WHERE id_pregunta=931020;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970289,931020,'Falso',0),
+(970290,931020,'Verdadero',1);
+UPDATE preguntas SET id_evaluacion=921005,texto_pregunta='Lee: «El ratón ayudó al león a salir de una red. El león aprendió que incluso alguien pequeño puede ayudar». Explica una enseñanza del relato.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='DESARROLLO'),puntaje_maximo=2 WHERE id_pregunta=931021;
+UPDATE preguntas SET id_evaluacion=921006,texto_pregunta='Lee: «Elena caminó por un bosque oscuro hasta una cabaña». ¿Qué opción describe el ambiente del fragmento?',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_UNICA'),puntaje_maximo=1 WHERE id_pregunta=931022;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970291,931022,'La moraleja de una fábula',0),
+(970292,931022,'Un bosque y una cabaña',1),
+(970293,931022,'El nombre de la autora',0),
+(970294,931022,'La cantidad de páginas',0);
+UPDATE preguntas SET id_evaluacion=921006,texto_pregunta='Lee: «Pablo tembló al oír un rugido y se escondió detrás de una roca». Marca pistas de que sentía miedo.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_MULTIPLE'),puntaje_maximo=1 WHERE id_pregunta=931023;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970295,931023,'Tembló al oír el rugido',1),
+(970296,931023,'Se escondió detrás de una roca',1),
+(970297,931023,'Se puso a cantar alegremente',0),
+(970298,931023,'Corrió a abrazar al animal',0);
+UPDATE preguntas SET id_evaluacion=921006,texto_pregunta='El autor de un cuento y el narrador de ese cuento son siempre la misma persona.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='VERDADERO_FALSO'),puntaje_maximo=1 WHERE id_pregunta=931024;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970299,931024,'Falso',1),
+(970300,931024,'Verdadero',0);
+UPDATE preguntas SET id_evaluacion=921006,texto_pregunta='Lee: «La luna era una lámpara sobre el mar». ¿Con qué se compara la luna y qué característica comparten en esta expresión?',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='DESARROLLO'),puntaje_maximo=2 WHERE id_pregunta=931025;
+
+-- Lenguaje / Comunicación
+UPDATE unidades SET id_asignatura=2,id_objetivo=910012,titulo='Comunicación',descripcion='Comunicar ideas con claridad y adaptar el mensaje a su propósito y destinatario.',activo=1 WHERE id_unidad=910012;
+UPDATE evaluaciones SET titulo='Exploramos: Comunicación',estado_activo=1,cantidad_intentos=3 WHERE id_evaluacion=921007;
+UPDATE evaluaciones SET titulo='Prueba de cierre: Comunicación',estado_activo=1,cantidad_intentos=2 WHERE id_evaluacion=921008;
+UPDATE preguntas SET id_evaluacion=921007,texto_pregunta='¿Qué conviene hacer antes de exponer un tema frente al curso?',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_UNICA'),puntaje_maximo=1 WHERE id_pregunta=931026;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970301,931026,'Preparar y ordenar las ideas principales',1),
+(970302,931026,'Inventar todos los datos al comenzar',0),
+(970303,931026,'Evitar conocer el tema',0),
+(970304,931026,'Memorizar palabras sin comprenderlas',0);
+UPDATE preguntas SET id_evaluacion=921007,texto_pregunta='Marca acciones de escucha activa durante una conversación.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_MULTIPLE'),puntaje_maximo=1 WHERE id_pregunta=931027;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970305,931027,'Hacer una pregunta relacionada con lo escuchado',1),
+(970306,931027,'Interrumpir constantemente',0),
+(970307,931027,'Cambiar de tema sin escuchar',0),
+(970308,931027,'Prestar atención a quien habla',1);
+UPDATE preguntas SET id_evaluacion=921007,texto_pregunta='El destinatario es la persona o el grupo al que dirigimos un mensaje.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='VERDADERO_FALSO'),puntaje_maximo=1 WHERE id_pregunta=931028;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970309,931028,'Verdadero',1),
+(970310,931028,'Falso',0);
+UPDATE preguntas SET id_evaluacion=921007,texto_pregunta='Escribe un mensaje breve para pedir a tu profesora un libro de la biblioteca. Usa un saludo y expresa con claridad tu petición.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='DESARROLLO'),puntaje_maximo=2 WHERE id_pregunta=931029;
+UPDATE preguntas SET id_evaluacion=921008,texto_pregunta='¿Qué saludo es adecuado para comenzar una carta formal a la directora de una escuela?',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_UNICA'),puntaje_maximo=1 WHERE id_pregunta=931030;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970311,931030,'Estimada directora:',1),
+(970312,931030,'Oye, tú:',0),
+(970313,931030,'Chao, nos vemos:',0),
+(970314,931030,'¡Qué lata escribir!',0);
+UPDATE preguntas SET id_evaluacion=921008,texto_pregunta='Marca datos necesarios en un aviso que invita a una reunión.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_MULTIPLE'),puntaje_maximo=1 WHERE id_pregunta=931031;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970315,931031,'El día y la hora de la reunión',1),
+(970316,931031,'Un lugar secreto que nadie conoce',0),
+(970317,931031,'Una fecha distinta a la reunión',0),
+(970318,931031,'El lugar de la reunión',1);
+UPDATE preguntas SET id_evaluacion=921008,texto_pregunta='Hablar con claridad significa decir todas las palabras lo más rápido posible.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='VERDADERO_FALSO'),puntaje_maximo=1 WHERE id_pregunta=931032;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970319,931032,'Verdadero',0),
+(970320,931032,'Falso',1);
+UPDATE preguntas SET id_evaluacion=921008,texto_pregunta='Un compañero no entendió tu explicación de un juego. Describe una acción que podrías hacer para ayudarlo a comprender.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='DESARROLLO'),puntaje_maximo=2 WHERE id_pregunta=931033;
+
+-- Ciencias / Química
+UPDATE unidades SET id_asignatura=3,id_objetivo=910013,titulo='Química',descripcion='Distinguir propiedades de materiales, mezclas y cambios de estado cotidianos.',activo=1 WHERE id_unidad=910013;
+UPDATE evaluaciones SET titulo='Exploramos: Química',estado_activo=1,cantidad_intentos=3 WHERE id_evaluacion=921009;
+UPDATE evaluaciones SET titulo='Prueba de cierre: Química',estado_activo=1,cantidad_intentos=2 WHERE id_evaluacion=921010;
+UPDATE preguntas SET id_evaluacion=921009,texto_pregunta='Un charco se seca lentamente porque parte del agua pasa al aire como vapor. ¿Cómo se llama ese cambio?',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_UNICA'),puntaje_maximo=1 WHERE id_pregunta=931034;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970321,931034,'Congelación',0),
+(970322,931034,'Fusión',0),
+(970323,931034,'Condensación',0),
+(970324,931034,'Evaporación',1);
+UPDATE preguntas SET id_evaluacion=921009,texto_pregunta='Marca propiedades observables de un material.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_MULTIPLE'),puntaje_maximo=1 WHERE id_pregunta=931035;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970325,931035,'Nombre de su dueño',0),
+(970326,931035,'Día de cumpleaños de quien lo usa',0),
+(970327,931035,'Color',1),
+(970328,931035,'Textura',1);
+UPDATE preguntas SET id_evaluacion=921009,texto_pregunta='La masa de un objeto puede medirse usando una balanza.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='VERDADERO_FALSO'),puntaje_maximo=1 WHERE id_pregunta=931036;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970329,931036,'Falso',0),
+(970330,931036,'Verdadero',1);
+UPDATE preguntas SET id_evaluacion=921009,texto_pregunta='Se agrega una pequeña cantidad de sal a un vaso de agua y se revuelve hasta que ya no se distinguen los granos. ¿La sal dejó de existir? Explica.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='DESARROLLO'),puntaje_maximo=2 WHERE id_pregunta=931037;
+UPDATE preguntas SET id_evaluacion=921010,texto_pregunta='El agua líquida se transforma en hielo al enfriarse lo suficiente. ¿Qué cambio ocurre?',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_UNICA'),puntaje_maximo=1 WHERE id_pregunta=931038;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970331,931038,'Evaporación',0),
+(970332,931038,'Fusión',0),
+(970333,931038,'Condensación',0),
+(970334,931038,'Congelación',1);
+UPDATE preguntas SET id_evaluacion=921010,texto_pregunta='Marca mezclas formadas por más de un material.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_MULTIPLE'),puntaje_maximo=1 WHERE id_pregunta=931039;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970335,931039,'Una pieza de cobre puro',0),
+(970336,931039,'Un vaso que contiene solo agua destilada',0),
+(970337,931039,'Agua con sal disuelta',1),
+(970338,931039,'Agua con arena',1);
+UPDATE preguntas SET id_evaluacion=921010,texto_pregunta='Cuando un cubo de hielo se derrite, el agua pasa de sólido a líquido.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='VERDADERO_FALSO'),puntaje_maximo=1 WHERE id_pregunta=931040;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970339,931040,'Falso',0),
+(970340,931040,'Verdadero',1);
+UPDATE preguntas SET id_evaluacion=921010,texto_pregunta='Explica una diferencia entre el hielo y el agua líquida al colocarlos en recipientes de distinta forma.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='DESARROLLO'),puntaje_maximo=2 WHERE id_pregunta=931041;
+
+-- Ciencias / Física
+UPDATE unidades SET id_asignatura=3,id_objetivo=910014,titulo='Física',descripcion='Reconocer fuerzas, cambios en el movimiento y formas de energía del entorno.',activo=1 WHERE id_unidad=910014;
+UPDATE evaluaciones SET titulo='Exploramos: Física',estado_activo=1,cantidad_intentos=3 WHERE id_evaluacion=921011;
+UPDATE evaluaciones SET titulo='Prueba de cierre: Física',estado_activo=1,cantidad_intentos=2 WHERE id_evaluacion=921012;
+UPDATE preguntas SET id_evaluacion=921011,texto_pregunta='¿Qué fuerza hace que una pelota soltada cerca de la superficie terrestre caiga hacia el suelo?',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_UNICA'),puntaje_maximo=1 WHERE id_pregunta=931042;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970341,931042,'Fuerza del sonido',0),
+(970342,931042,'Fuerza de una sombra',0),
+(970343,931042,'Gravedad',1),
+(970344,931042,'Fuerza de un imán sobre todo material',0);
+UPDATE preguntas SET id_evaluacion=921011,texto_pregunta='Marca efectos que puede producir una fuerza sobre un objeto.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_MULTIPLE'),puntaje_maximo=1 WHERE id_pregunta=931043;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970345,931043,'Hacer desaparecer siempre su masa',0),
+(970346,931043,'Cambiar su movimiento',1),
+(970347,931043,'Deformarlo',1),
+(970348,931043,'Convertirlo siempre en un ser vivo',0);
+UPDATE preguntas SET id_evaluacion=921011,texto_pregunta='Un empujón puede poner en movimiento un carrito que estaba detenido.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='VERDADERO_FALSO'),puntaje_maximo=1 WHERE id_pregunta=931044;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970349,931044,'Verdadero',1),
+(970350,931044,'Falso',0);
+UPDATE preguntas SET id_evaluacion=921011,texto_pregunta='Una pelota en movimiento choca con una pared y cambia de dirección. Explica qué relación tiene ese cambio con una fuerza.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='DESARROLLO'),puntaje_maximo=2 WHERE id_pregunta=931045;
+UPDATE preguntas SET id_evaluacion=921012,texto_pregunta='¿Qué instrumento es adecuado para medir cuánto dura una carrera?',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_UNICA'),puntaje_maximo=1 WHERE id_pregunta=931046;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970351,931046,'Brújula',0),
+(970352,931046,'Regla sin reloj',0),
+(970353,931046,'Cronómetro',1),
+(970354,931046,'Balanza',0);
+UPDATE preguntas SET id_evaluacion=921012,texto_pregunta='Marca formas de energía que recibimos del Sol.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_MULTIPLE'),puntaje_maximo=1 WHERE id_pregunta=931047;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970355,931047,'Electricidad transportada directamente por cables desde el Sol',0),
+(970356,931047,'Luz',1),
+(970357,931047,'Energía térmica',1),
+(970358,931047,'Combustible ya envasado',0);
+UPDATE preguntas SET id_evaluacion=921012,texto_pregunta='El roce entre una bicicleta y el suelo puede ayudar a disminuir su movimiento.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='VERDADERO_FALSO'),puntaje_maximo=1 WHERE id_pregunta=931048;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970359,931048,'Verdadero',1),
+(970360,931048,'Falso',0);
+UPDATE preguntas SET id_evaluacion=921012,texto_pregunta='Describe una situación cotidiana en la que una fuerza cambie la forma de un objeto.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='DESARROLLO'),puntaje_maximo=2 WHERE id_pregunta=931049;
+
+-- Historia / Roma antigua
+UPDATE unidades SET id_asignatura=5,id_objetivo=910015,titulo='Roma antigua',descripcion='Reconocer construcciones, espacios y legados culturales de la antigua Roma.',activo=1 WHERE id_unidad=910015;
+UPDATE evaluaciones SET titulo='Exploramos: Roma antigua',estado_activo=1,cantidad_intentos=3 WHERE id_evaluacion=921013;
+UPDATE evaluaciones SET titulo='Prueba de cierre: Roma antigua',estado_activo=1,cantidad_intentos=2 WHERE id_evaluacion=921014;
+UPDATE preguntas SET id_evaluacion=921013,texto_pregunta='¿Qué ciudad dio su nombre a la civilización romana?',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_UNICA'),puntaje_maximo=1 WHERE id_pregunta=931050;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970361,931050,'Cartago',0),
+(970362,931050,'Roma',1),
+(970363,931050,'Atenas',0),
+(970364,931050,'Alejandría',0);
+UPDATE preguntas SET id_evaluacion=921013,texto_pregunta='Marca obras construidas por los romanos para conectar o abastecer sus ciudades.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_MULTIPLE'),puntaje_maximo=1 WHERE id_pregunta=931051;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970365,931051,'Calzadas',1),
+(970366,931051,'Acueductos',1),
+(970367,931051,'Aeropuertos',0),
+(970368,931051,'Líneas de metro eléctrico',0);
+UPDATE preguntas SET id_evaluacion=921013,texto_pregunta='El latín fue una lengua utilizada en la antigua Roma.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='VERDADERO_FALSO'),puntaje_maximo=1 WHERE id_pregunta=931052;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970369,931052,'Falso',0),
+(970370,931052,'Verdadero',1);
+UPDATE preguntas SET id_evaluacion=921013,texto_pregunta='Explica para qué servía un acueducto romano y por qué era útil para una ciudad.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='DESARROLLO'),puntaje_maximo=2 WHERE id_pregunta=931053;
+UPDATE preguntas SET id_evaluacion=921014,texto_pregunta='¿Cómo se llamaba el espacio público central de muchas ciudades romanas donde se desarrollaban actividades políticas y comerciales?',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_UNICA'),puntaje_maximo=1 WHERE id_pregunta=931054;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970371,931054,'Estación de tren',0),
+(970372,931054,'Foro',1),
+(970373,931054,'Aeropuerto',0),
+(970374,931054,'Estadio de fútbol moderno',0);
+UPDATE preguntas SET id_evaluacion=921014,texto_pregunta='Marca legados romanos que se pueden estudiar en la actualidad.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_MULTIPLE'),puntaje_maximo=1 WHERE id_pregunta=931055;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970375,931055,'Restos de caminos y construcciones',1),
+(970376,931055,'La influencia del latín en el español',1),
+(970377,931055,'La invención romana del teléfono móvil',0),
+(970378,931055,'La construcción romana de aviones de pasajeros',0);
+UPDATE preguntas SET id_evaluacion=921014,texto_pregunta='Todas las personas de la antigua Roma tenían los mismos derechos y condiciones de vida.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='VERDADERO_FALSO'),puntaje_maximo=1 WHERE id_pregunta=931056;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970379,931056,'Falso',1),
+(970380,931056,'Verdadero',0);
+UPDATE preguntas SET id_evaluacion=921014,texto_pregunta='Menciona una diferencia entre una ciudad romana antigua y una ciudad actual, sin afirmar que todos sus habitantes vivían igual.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='DESARROLLO'),puntaje_maximo=2 WHERE id_pregunta=931057;
+
+-- Historia / Cartografía
+UPDATE unidades SET id_asignatura=5,id_objetivo=910016,titulo='Cartografía',descripcion='Interpretar mapas mediante orientación, símbolos, leyendas y escalas sencillas.',activo=1 WHERE id_unidad=910016;
+UPDATE evaluaciones SET titulo='Exploramos: Cartografía',estado_activo=1,cantidad_intentos=3 WHERE id_evaluacion=921015;
+UPDATE evaluaciones SET titulo='Prueba de cierre: Cartografía',estado_activo=1,cantidad_intentos=2 WHERE id_evaluacion=921016;
+UPDATE preguntas SET id_evaluacion=921015,texto_pregunta='¿Para qué sirve la leyenda de un mapa?',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_UNICA'),puntaje_maximo=1 WHERE id_pregunta=931058;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970381,931058,'Explicar el significado de sus símbolos',1),
+(970382,931058,'Indicar siempre la temperatura',0),
+(970383,931058,'Cambiar la forma del territorio',0),
+(970384,931058,'Contar una historia inventada',0);
+UPDATE preguntas SET id_evaluacion=921015,texto_pregunta='Marca puntos cardinales.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_MULTIPLE'),puntaje_maximo=1 WHERE id_pregunta=931059;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970385,931059,'Sur',1),
+(970386,931059,'Arriba de la mesa',0),
+(970387,931059,'Cerca de la puerta',0),
+(970388,931059,'Norte',1);
+UPDATE preguntas SET id_evaluacion=921015,texto_pregunta='Si el mapa indica que el norte está arriba, el sur queda abajo.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='VERDADERO_FALSO'),puntaje_maximo=1 WHERE id_pregunta=931060;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970389,931060,'Verdadero',1),
+(970390,931060,'Falso',0);
+UPDATE preguntas SET id_evaluacion=921015,texto_pregunta='En un mapa, un dibujo de un libro representa una biblioteca. ¿Cómo puedes saber ese significado sin adivinar?',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='DESARROLLO'),puntaje_maximo=2 WHERE id_pregunta=931061;
+UPDATE preguntas SET id_evaluacion=921016,texto_pregunta='En un mapa, cada centímetro representa un kilómetro. Dos lugares están separados por 3 centímetros. ¿Qué distancia representan?',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_UNICA'),puntaje_maximo=1 WHERE id_pregunta=931062;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970391,931062,'3 kilómetros',1),
+(970392,931062,'1 kilómetro',0),
+(970393,931062,'30 kilómetros',0),
+(970394,931062,'3 metros',0);
+UPDATE preguntas SET id_evaluacion=921016,texto_pregunta='Marca información que puede aparecer en un mapa de una localidad.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='SELECCION_MULTIPLE'),puntaje_maximo=1 WHERE id_pregunta=931063;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970395,931063,'Símbolos de servicios como una biblioteca',1),
+(970396,931063,'Todas las conversaciones de sus habitantes',0),
+(970397,931063,'Los pensamientos de cada persona',0),
+(970398,931063,'Ubicación de calles y plazas',1);
+UPDATE preguntas SET id_evaluacion=921016,texto_pregunta='La escala permite relacionar una distancia del mapa con una distancia real.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='VERDADERO_FALSO'),puntaje_maximo=1 WHERE id_pregunta=931064;
+INSERT INTO opciones (id_opcion,id_pregunta,texto_alternativa,es_correcta) VALUES
+(970399,931064,'Verdadero',1),
+(970400,931064,'Falso',0);
+UPDATE preguntas SET id_evaluacion=921016,texto_pregunta='Un mapa tiene una flecha que señala el norte hacia la parte superior. ¿Hacia qué lado del mapa queda el este? Explica cómo te orientaste.',id_tipo_pregunta=(SELECT id_tipo_pregunta FROM tipos_pregunta WHERE codigo='DESARROLLO'),puntaje_maximo=2 WHERE id_pregunta=931065;

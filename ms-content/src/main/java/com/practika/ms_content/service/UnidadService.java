@@ -71,7 +71,7 @@ public class UnidadService {
     public List<UnidadDetalleResponse> listar(Integer idAsignatura, Authentication auth) {
         if (esRol(auth, "UTP")) {
             var encontradas = idAsignatura == null ? unidades.findAll() : unidades.findByIdAsignatura(idAsignatura);
-            return encontradas.stream().map(u -> construirDetalle(u, true)).toList();
+            return encontradas.stream().filter(u -> Boolean.TRUE.equals(u.getActivo())).map(u -> construirDetalle(u, true)).toList();
         }
         IdentityClient.UsuarioRef usuario = usuarioActual();
         if ("ESTUDIANTE".equalsIgnoreCase(usuario.rol())) {
@@ -81,7 +81,7 @@ public class UnidadService {
         }
         if ("PROFESOR".equalsIgnoreCase(usuario.rol())) {
             var encontradas = idAsignatura == null ? unidades.findAll() : unidades.findByIdAsignatura(idAsignatura);
-            return encontradas.stream().map(u -> construirDetalle(u, true)).toList();
+            return encontradas.stream().filter(u -> Boolean.TRUE.equals(u.getActivo())).map(u -> construirDetalle(u, true)).toList();
         }
         throw new ResponseStatusException(HttpStatus.FORBIDDEN,
                 "Tu rol no puede consultar unidades asignadas a un curso");

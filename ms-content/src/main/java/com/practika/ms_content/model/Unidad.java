@@ -16,5 +16,6 @@ public class Unidad {
     @Column(nullable = false, length = 150) private String titulo;
     @Column(columnDefinition = "TEXT") private String descripcion;
     @Column(name = "img_unidad", length = 255) private String imgUnidad;
+    @Column(nullable = false) private Boolean activo = true;
 
 }

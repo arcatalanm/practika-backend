@@ -185,3 +185,38 @@ INSERT INTO objetivo_aprendizajes (id_aprendizaje,id_asignatura,codigo,descripci
 (910014,3,'OA-MVP-CIE-04','Comprender fenómenos físicos mediante observación y modelos.'),
 (910015,5,'OA-MVP-HIS-03','Reconocer la organización y legado de la antigua Roma.'),
 (910016,5,'OA-MVP-HIS-04','Interpretar mapas y representar información espacial.');
+
+--changeset practika:academic-015-teacher-multiple-subjects
+-- A teacher can teach more than one subject; each pair remains unique.
+ALTER TABLE docentes_asignaturas DROP PRIMARY KEY, ADD PRIMARY KEY (run_profesor,id_asignatura);
+
+--changeset practika:academic-016-reviewed-four-subjects-three-teachers context:@dev
+-- Shared canonical subject/objective IDs are the academic/content fixture contract.
+--preconditions onFail:HALT onError:HALT
+--precondition-sql-check expectedResult:4 SELECT COUNT(*) FROM asignaturas WHERE (id_asignatura=1 AND nombre_materia='Matemática') OR (id_asignatura=2 AND nombre_materia='Lenguaje') OR (id_asignatura=3 AND nombre_materia='Ciencias') OR (id_asignatura=5 AND nombre_materia='Historia')
+--precondition-sql-check expectedResult:16 SELECT COUNT(*) FROM objetivo_aprendizajes WHERE id_aprendizaje BETWEEN 910001 AND 910016
+UPDATE asignaturas SET activo=CASE WHEN id_asignatura IN (1,2,3,5) THEN 1 ELSE 0 END;
+UPDATE cursos_portal SET activo=0 WHERE id_asignatura NOT IN (1,2,3,5);
+DELETE FROM docentes_cursos_portal WHERE run_profesor=12345683;
+DELETE FROM docentes_asignaturas WHERE run_profesor IN (12345679,12345671,12345682,12345683);
+INSERT INTO docentes_asignaturas (run_profesor,id_asignatura,ambos_basicos) VALUES
+(12345679,1,1),
+(12345671,2,1),
+(12345682,5,1),
+(12345682,3,1);
+UPDATE objetivo_aprendizajes SET id_asignatura=1,descripcion_objetivo='Resolver sumas, restas y problemas de cantidades hasta 20.' WHERE id_aprendizaje=910001;
+UPDATE objetivo_aprendizajes SET id_asignatura=1,descripcion_objetivo='Reconocer figuras planas y describir sus lados, vértices y posiciones.' WHERE id_aprendizaje=910002;
+UPDATE objetivo_aprendizajes SET id_asignatura=2,descripcion_objetivo='Localizar información, ordenar acciones y realizar inferencias a partir de relatos breves.' WHERE id_aprendizaje=910003;
+UPDATE objetivo_aprendizajes SET id_asignatura=2,descripcion_objetivo='Escribir oraciones claras y revisar mayúsculas, puntuación y orden de las ideas.' WHERE id_aprendizaje=910004;
+UPDATE objetivo_aprendizajes SET id_asignatura=5,descripcion_objetivo='Relacionar civilizaciones antiguas con sus ríos, actividades y aportes culturales.' WHERE id_aprendizaje=910005;
+UPDATE objetivo_aprendizajes SET id_asignatura=5,descripcion_objetivo='Reconocer instrumentos de navegación y describir encuentros entre sociedades durante las exploraciones.' WHERE id_aprendizaje=910006;
+UPDATE objetivo_aprendizajes SET id_asignatura=3,descripcion_objetivo='Reconocer seres vivos, sus necesidades y relaciones con el ambiente.' WHERE id_aprendizaje=910007;
+UPDATE objetivo_aprendizajes SET id_asignatura=3,descripcion_objetivo='Reconocer las funciones del microscopio y describir observaciones de muestras.' WHERE id_aprendizaje=910008;
+UPDATE objetivo_aprendizajes SET id_asignatura=1,descripcion_objetivo='Distinguir cuerpos geométricos y describir sus caras, aristas y vértices.' WHERE id_aprendizaje=910009;
+UPDATE objetivo_aprendizajes SET id_asignatura=1,descripcion_objetivo='Organizar e interpretar cantidades en tablas y gráficos sencillos.' WHERE id_aprendizaje=910010;
+UPDATE objetivo_aprendizajes SET id_asignatura=2,descripcion_objetivo='Reconocer personajes, ambientes y recursos de textos literarios breves.' WHERE id_aprendizaje=910011;
+UPDATE objetivo_aprendizajes SET id_asignatura=2,descripcion_objetivo='Comunicar ideas con claridad y adaptar el mensaje a su propósito y destinatario.' WHERE id_aprendizaje=910012;
+UPDATE objetivo_aprendizajes SET id_asignatura=3,descripcion_objetivo='Distinguir propiedades de materiales, mezclas y cambios de estado cotidianos.' WHERE id_aprendizaje=910013;
+UPDATE objetivo_aprendizajes SET id_asignatura=3,descripcion_objetivo='Reconocer fuerzas, cambios en el movimiento y formas de energía del entorno.' WHERE id_aprendizaje=910014;
+UPDATE objetivo_aprendizajes SET id_asignatura=5,descripcion_objetivo='Reconocer construcciones, espacios y legados culturales de la antigua Roma.' WHERE id_aprendizaje=910015;
+UPDATE objetivo_aprendizajes SET id_asignatura=5,descripcion_objetivo='Interpretar mapas mediante orientación, símbolos, leyendas y escalas sencillas.' WHERE id_aprendizaje=910016;

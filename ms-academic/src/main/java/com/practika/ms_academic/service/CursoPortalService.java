@@ -33,8 +33,9 @@ public class CursoPortalService {
     public List<CursoPortalResponse> listar(Authentication auth) {
         var user = usuarioActual();
         if (!Boolean.TRUE.equals(user.activo())) throw new ResponseStatusException(HttpStatus.FORBIDDEN, "La cuenta está inactiva");
-        var especialidad = "PROFESOR".equals(user.rol()) ? especialidades.findById(user.run()).orElse(null) : null;
-        boolean ambosBasicos = especialidad != null && Boolean.TRUE.equals(especialidad.getAmbosBasicos());
+        var materias = "PROFESOR".equals(user.rol()) ? especialidades.findByRunProfesor(user.run())
+                : List.<com.practika.ms_academic.model.DocenteAsignatura>of();
+        boolean ambosBasicos = materias.stream().anyMatch(e -> Boolean.TRUE.equals(e.getAmbosBasicos()));
         var sections = tieneRol(auth, "ADMIN", "UTP") || ambosBasicos
                 ? consultar(identity::obtenerSecciones, "No se pudieron consultar las secciones")
                 : user.seccion() == null ? List.<IdentityClient.SeccionRef>of() : List.of(user.seccion());
@@ -46,7 +47,8 @@ public class CursoPortalService {
             var current = cursos.findByIdSeccionAndPeriodoIsNullOrderByIdAsc(section.id());
             for (var subject : subjects) {
                 if (!Boolean.TRUE.equals(subject.getActivo())) continue;
-                if (especialidad != null && !subject.getId().equals(especialidad.getIdAsignatura())) continue;
+                if (!materias.isEmpty() && materias.stream().noneMatch(e -> subject.getId().equals(e.getIdAsignatura()))) continue;
+                if ("PROFESOR".equals(user.rol()) && !atiendeSeccion(user, section, subject.getId())) continue;
                 var link = current.stream().filter(c -> subject.getId().equals(c.getIdAsignatura())).findFirst().orElse(null);
                 if (link == null) {
                     link = new CursoPortal(); link.setIdSeccion(section.id()); link.setIdAsignatura(subject.getId());
@@ -123,7 +125,7 @@ public class CursoPortalService {
         if ("ESTUDIANTE".equalsIgnoreCase(user.rol()) && Boolean.TRUE.equals(consultar(
                 ()->identity.tieneMatricula(section.id(),user.run(),false),"No se pudo consultar la matrícula"))) return;
         if ("PROFESOR".equalsIgnoreCase(user.rol())
-                && atiendeSeccion(user, section) && Boolean.TRUE.equals(section.activo())
+                && atiendeSeccion(user, section, c.getIdAsignatura()) && Boolean.TRUE.equals(section.activo())
                 && imparte(user.run(), c.getIdAsignatura())) return;
         throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No tienes acceso a este curso del portal");
     }
@@ -169,7 +171,8 @@ public class CursoPortalService {
     }
 
     private boolean imparte(Integer run, Integer idAsignatura) {
-        return especialidades.findById(run).map(e -> e.getIdAsignatura().equals(idAsignatura)).orElse(true);
+        var materias = especialidades.findByRunProfesor(run);
+        return materias.isEmpty() || materias.stream().anyMatch(e -> e.getIdAsignatura().equals(idAsignatura));
     }
 
     private boolean esPrimeroOSegundo(IdentityClient.SeccionRef section) {
@@ -179,11 +182,10 @@ public class CursoPortalService {
                 || "2° Básico".equalsIgnoreCase(section.nivelEducativo());
     }
 
-    private boolean atiendeSeccion(IdentityClient.UsuarioRef user, IdentityClient.SeccionRef section) {
-        var especialidad = especialidades.findById(user.run()).orElse(null);
-        if (especialidad != null && Boolean.TRUE.equals(especialidad.getAmbosBasicos()))
-            return esPrimeroOSegundo(section);
-        return user.seccion() != null && section.id().equals(user.seccion().id());
+    private boolean atiendeSeccion(IdentityClient.UsuarioRef user, IdentityClient.SeccionRef section, Integer idAsignatura) {
+        if (user.seccion() != null && section.id().equals(user.seccion().id())) return true;
+        return esPrimeroOSegundo(section) && especialidades.findByRunProfesor(user.run()).stream()
+                .anyMatch(e -> idAsignatura.equals(e.getIdAsignatura()) && Boolean.TRUE.equals(e.getAmbosBasicos()));
     }
 
     private List<IdentityClient.PersonaPublicaRef> docentesDeCurso(CursoPortal curso, IdentityClient.SeccionRef section) {
