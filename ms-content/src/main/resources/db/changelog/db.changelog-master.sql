@@ -499,7 +499,7 @@ ALTER TABLE `preguntas` ADD COLUMN `id_evaluacion` INT NULL;
 UPDATE `preguntas` t JOIN `evaluaciones` e ON e.`tipo`='ACTIVIDAD' AND e.`id_legacy`=t.`id_actividad` SET t.`id_evaluacion`=e.`id_evaluacion` WHERE t.`id_actividad` IS NOT NULL;
 UPDATE `preguntas` t JOIN `evaluaciones` e ON e.`tipo`='PRUEBA' AND e.`id_legacy`=t.`id_prueba` SET t.`id_evaluacion`=e.`id_evaluacion` WHERE t.`id_prueba` IS NOT NULL;
 
---changeset practika:content-048-preguntas-evaluation-contract
+--changeset practika:content-048-preguntas-evaluation-contract dbms:mysql
 --preconditions onFail:HALT onError:HALT
 --precondition-sql-check expectedResult:0 SELECT COUNT(*) FROM preguntas WHERE id_evaluacion IS NULL
 ALTER TABLE `preguntas`
@@ -511,18 +511,40 @@ ALTER TABLE `preguntas`
   MODIFY COLUMN `id_evaluacion` INT NOT NULL,
   ADD CONSTRAINT `fk_pregunta_evaluacion` FOREIGN KEY (`id_evaluacion`) REFERENCES `evaluaciones` (`id_evaluacion`) ON DELETE CASCADE;
 
+--changeset practika:content-048-preguntas-evaluation-contract-mariadb dbms:mariadb
+--preconditions onFail:HALT onError:HALT
+--precondition-sql-check expectedResult:0 SELECT COUNT(*) FROM preguntas WHERE id_evaluacion IS NULL
+ALTER TABLE `preguntas`
+  DROP FOREIGN KEY `fk_preguntas_actividades`,
+  DROP FOREIGN KEY `fk_preguntas_pruebas`,
+  DROP CONSTRAINT `chk_pregunta_destino`,
+  DROP COLUMN `id_actividad`,
+  DROP COLUMN `id_prueba`,
+  MODIFY COLUMN `id_evaluacion` INT NOT NULL,
+  ADD CONSTRAINT `fk_pregunta_evaluacion` FOREIGN KEY (`id_evaluacion`) REFERENCES `evaluaciones` (`id_evaluacion`) ON DELETE CASCADE;
+
 --changeset practika:content-049-materiales-evaluation-column
 ALTER TABLE `materiales` ADD COLUMN `id_evaluacion` INT NULL;
 
 --changeset practika:content-050-materiales-evaluation-copy
 UPDATE `materiales` t JOIN `evaluaciones` e ON e.`tipo`='ACTIVIDAD' AND e.`id_legacy`=t.`id_actividad` SET t.`id_evaluacion`=e.`id_evaluacion` WHERE t.`id_actividad` IS NOT NULL;
 
---changeset practika:content-051-materiales-evaluation-contract
+--changeset practika:content-051-materiales-evaluation-contract dbms:mysql
 --preconditions onFail:HALT onError:HALT
 --precondition-sql-check expectedResult:0 SELECT COUNT(*) FROM materiales WHERE id_evaluacion IS NULL AND id_actividad IS NOT NULL
 ALTER TABLE `materiales`
   DROP FOREIGN KEY `fk_materiales_actividades`,
   DROP CHECK `chk_material_destino`,
+  DROP COLUMN `id_actividad`,
+  ADD CONSTRAINT `fk_material_evaluacion` FOREIGN KEY (`id_evaluacion`) REFERENCES `evaluaciones` (`id_evaluacion`) ON DELETE CASCADE,
+  ADD CONSTRAINT `chk_materiales_evaluation_owner` CHECK ((`id_evaluacion` IS NOT NULL) <> (`id_pregunta` IS NOT NULL));
+
+--changeset practika:content-051-materiales-evaluation-contract-mariadb dbms:mariadb
+--preconditions onFail:HALT onError:HALT
+--precondition-sql-check expectedResult:0 SELECT COUNT(*) FROM materiales WHERE id_evaluacion IS NULL AND id_actividad IS NOT NULL
+ALTER TABLE `materiales`
+  DROP FOREIGN KEY `fk_materiales_actividades`,
+  DROP CONSTRAINT `chk_material_destino`,
   DROP COLUMN `id_actividad`,
   ADD CONSTRAINT `fk_material_evaluacion` FOREIGN KEY (`id_evaluacion`) REFERENCES `evaluaciones` (`id_evaluacion`) ON DELETE CASCADE,
   ADD CONSTRAINT `chk_materiales_evaluation_owner` CHECK ((`id_evaluacion` IS NOT NULL) <> (`id_pregunta` IS NOT NULL));
@@ -533,12 +555,22 @@ ALTER TABLE `archivos_recursos` ADD COLUMN `id_evaluacion` INT NULL;
 --changeset practika:content-053-archivos_recursos-evaluation-copy
 UPDATE `archivos_recursos` t JOIN `evaluaciones` e ON e.`tipo`='ACTIVIDAD' AND e.`id_legacy`=t.`id_actividad` SET t.`id_evaluacion`=e.`id_evaluacion` WHERE t.`id_actividad` IS NOT NULL;
 
---changeset practika:content-054-archivos_recursos-evaluation-contract
+--changeset practika:content-054-archivos_recursos-evaluation-contract dbms:mysql
 --preconditions onFail:HALT onError:HALT
 --precondition-sql-check expectedResult:0 SELECT COUNT(*) FROM archivos_recursos WHERE id_evaluacion IS NULL AND id_actividad IS NOT NULL
 ALTER TABLE `archivos_recursos`
   DROP FOREIGN KEY `fk_archivos_recursos_actividad`,
   DROP CHECK `chk_archivo_recurso_destino`,
+  DROP COLUMN `id_actividad`,
+  ADD CONSTRAINT `fk_archivo_recurso_evaluacion` FOREIGN KEY (`id_evaluacion`) REFERENCES `evaluaciones` (`id_evaluacion`) ON DELETE CASCADE,
+  ADD CONSTRAINT `chk_archivos_recursos_evaluation_owner` CHECK ((`id_evaluacion` IS NOT NULL) <> (`id_pregunta` IS NOT NULL));
+
+--changeset practika:content-054-archivos_recursos-evaluation-contract-mariadb dbms:mariadb
+--preconditions onFail:HALT onError:HALT
+--precondition-sql-check expectedResult:0 SELECT COUNT(*) FROM archivos_recursos WHERE id_evaluacion IS NULL AND id_actividad IS NOT NULL
+ALTER TABLE `archivos_recursos`
+  DROP FOREIGN KEY `fk_archivos_recursos_actividad`,
+  DROP CONSTRAINT `chk_archivo_recurso_destino`,
   DROP COLUMN `id_actividad`,
   ADD CONSTRAINT `fk_archivo_recurso_evaluacion` FOREIGN KEY (`id_evaluacion`) REFERENCES `evaluaciones` (`id_evaluacion`) ON DELETE CASCADE,
   ADD CONSTRAINT `chk_archivos_recursos_evaluation_owner` CHECK ((`id_evaluacion` IS NOT NULL) <> (`id_pregunta` IS NOT NULL));
@@ -550,7 +582,7 @@ ALTER TABLE `evaluaciones_asignadas` ADD COLUMN `id_evaluacion` INT NULL;
 UPDATE `evaluaciones_asignadas` t JOIN `evaluaciones` e ON e.`tipo`='ACTIVIDAD' AND e.`id_legacy`=t.`id_actividad` SET t.`id_evaluacion`=e.`id_evaluacion` WHERE t.`id_actividad` IS NOT NULL;
 UPDATE `evaluaciones_asignadas` t JOIN `evaluaciones` e ON e.`tipo`='PRUEBA' AND e.`id_legacy`=t.`id_prueba` SET t.`id_evaluacion`=e.`id_evaluacion` WHERE t.`id_prueba` IS NOT NULL;
 
---changeset practika:content-057-evaluaciones_asignadas-evaluation-contract
+--changeset practika:content-057-evaluaciones_asignadas-evaluation-contract dbms:mysql
 --preconditions onFail:HALT onError:HALT
 --precondition-sql-check expectedResult:0 SELECT COUNT(*) FROM evaluaciones_asignadas WHERE id_evaluacion IS NULL
 ALTER TABLE `evaluaciones_asignadas`
@@ -566,6 +598,21 @@ ALTER TABLE `evaluaciones_asignadas`
   ADD CONSTRAINT `fk_publicacion_evaluacion` FOREIGN KEY (`id_evaluacion`) REFERENCES `evaluaciones` (`id_evaluacion`);
 
 -- Legacy actividades/pruebas tables remain as cutover archives. Application writes use evaluaciones only.
+
+--changeset practika:content-057-evaluaciones_asignadas-evaluation-contract-mariadb dbms:mariadb
+--preconditions onFail:HALT onError:HALT
+--precondition-sql-check expectedResult:0 SELECT COUNT(*) FROM evaluaciones_asignadas WHERE id_evaluacion IS NULL
+ALTER TABLE `evaluaciones_asignadas`
+  ADD CONSTRAINT `uq_publicacion_evaluacion_version` UNIQUE (`id_asignacion`,`id_evaluacion`,`version`),
+  DROP FOREIGN KEY `fk_evaluaciones_actividad`,
+  DROP FOREIGN KEY `fk_evaluaciones_prueba`,
+  DROP CONSTRAINT `chk_evaluacion_destino`,
+  DROP INDEX `uq_evaluacion_actividad_version`,
+  DROP INDEX `uq_evaluacion_prueba_version`,
+  DROP COLUMN `id_actividad`,
+  DROP COLUMN `id_prueba`,
+  MODIFY COLUMN `id_evaluacion` INT NOT NULL,
+  ADD CONSTRAINT `fk_publicacion_evaluacion` FOREIGN KEY (`id_evaluacion`) REFERENCES `evaluaciones` (`id_evaluacion`);
 
 --changeset practika:content-058-detach-activity-archive
 ALTER TABLE `actividades` DROP FOREIGN KEY `fk_actividades_unidades_requerida`;

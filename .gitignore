@@ -38,3 +38,4 @@ error-academic.txt
 .DS_Store
 Thumbs.db
 seed-data
+.run/

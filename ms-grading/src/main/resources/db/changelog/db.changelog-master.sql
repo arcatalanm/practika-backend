@@ -154,8 +154,14 @@ ALTER TABLE `observacion_pedagogicas`
 ALTER TABLE `respuestas` ADD CONSTRAINT `chk_respuesta_intento` CHECK (`numero_intento` >= 1),
   ADD CONSTRAINT `chk_respuesta_puntaje` CHECK (`puntaje_obtenido` IS NULL OR `puntaje_obtenido` >= 0);
 
---changeset practika:grading-010-section-without-school-year
+--changeset practika:grading-010-section-without-school-year dbms:mysql
 ALTER TABLE entregas DROP CHECK chk_entrega_contexto;
+ALTER TABLE entregas ADD CONSTRAINT chk_entrega_contexto CHECK (
+  (id_evaluacion_asignada IS NULL AND id_curso_portal IS NULL AND id_periodo_academico IS NULL AND id_seccion IS NULL AND snapshot_evaluacion IS NULL) OR
+  (id_evaluacion_asignada IS NOT NULL AND id_curso_portal IS NOT NULL AND id_seccion IS NOT NULL AND snapshot_evaluacion IS NOT NULL));
+
+--changeset practika:grading-010-section-without-school-year-mariadb dbms:mariadb
+ALTER TABLE entregas DROP CONSTRAINT chk_entrega_contexto;
 ALTER TABLE entregas ADD CONSTRAINT chk_entrega_contexto CHECK (
   (id_evaluacion_asignada IS NULL AND id_curso_portal IS NULL AND id_periodo_academico IS NULL AND id_seccion IS NULL AND snapshot_evaluacion IS NULL) OR
   (id_evaluacion_asignada IS NOT NULL AND id_curso_portal IS NOT NULL AND id_seccion IS NOT NULL AND snapshot_evaluacion IS NOT NULL));

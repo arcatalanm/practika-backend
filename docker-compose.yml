@@ -70,6 +70,7 @@ services:
   ms-auth:
     build: ./ms-auth
     environment:
+      DB_DIALECT: org.hibernate.dialect.MySQLDialect
       DB_URL: jdbc:mysql://db-auth:3306/practika_auth?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
       DB_USERNAME: root
       DB_PASSWORD: ${MYSQL_ROOT_PASSWORD:-practika_dev_password}
@@ -86,6 +87,7 @@ services:
   ms-academic:
     build: ./ms-academic
     environment:
+      DB_DIALECT: org.hibernate.dialect.MySQLDialect
       DB_URL: jdbc:mysql://db-academic:3306/practika_academic?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
       DB_USERNAME: root
       DB_PASSWORD: ${MYSQL_ROOT_PASSWORD:-practika_dev_password}
@@ -103,6 +105,7 @@ services:
   ms-content:
     build: ./ms-content
     environment:
+      DB_DIALECT: org.hibernate.dialect.MySQLDialect
       GRADING_INTERNAL_TOKEN: ${GRADING_INTERNAL_TOKEN:-practika-grading-dev-key-change-in-production-2026}
       DB_URL: jdbc:mysql://db-content:3306/practika_content?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
       DB_USERNAME: root
@@ -124,6 +127,7 @@ services:
   ms-grading:
     build: ./ms-grading
     environment:
+      DB_DIALECT: org.hibernate.dialect.MySQLDialect
       GRADING_INTERNAL_TOKEN: ${GRADING_INTERNAL_TOKEN:-practika-grading-dev-key-change-in-production-2026}
       DB_URL: jdbc:mysql://db-grading:3306/practika_grading?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
       DB_USERNAME: root
