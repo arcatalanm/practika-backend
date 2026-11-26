@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+    <include file="db/changelog/db.changelog-master.sql"/>
+    <changeSet id="ms-content-media-path-unidad_imagenes" author="practika">
+        <addColumn tableName="unidad_imagenes"><column name="ruta_archivo" type="VARCHAR(512)"/></addColumn>
+    </changeSet>
+    <changeSet id="ms-content-media-export-unidad_imagenes" author="practika">
+        <validCheckSum>9:300e001c1416c49e864cfd5d612c2162</validCheckSum>
+        <validCheckSum>9:fd8be69861160bd758b7a5185d599a99</validCheckSum>
+        <customChange class="com.practika.ms_content.storage.BlobToMediaMigration">
+            <param name="directorio" value="media"/>
+            <param name="tabla" value="unidad_imagenes"/>
+            <param name="clave" value="id_unidad"/>
+            <param name="carpeta" value="unidades"/>
+            <param name="columnaMime" value="tipo_contenido"/>
+        </customChange>
+    </changeSet>
+    <changeSet id="ms-content-media-no-blob-unidad_imagenes" author="practika">
+        <addNotNullConstraint tableName="unidad_imagenes" columnName="ruta_archivo" columnDataType="VARCHAR(512)"/>
+        <dropColumn tableName="unidad_imagenes" columnName="contenido"/>
+    </changeSet>
+    <changeSet id="ms-content-media-path-archivos_recursos" author="practika">
+        <addColumn tableName="archivos_recursos"><column name="ruta_archivo" type="VARCHAR(512)"/></addColumn>
+    </changeSet>
+    <changeSet id="ms-content-media-export-archivos_recursos" author="practika">
+        <validCheckSum>9:92e7d3f7657b1ffb017fd79d879d45eb</validCheckSum>
+        <validCheckSum>9:acb026dff8ef85bf607e791c57baac93</validCheckSum>
+        <customChange class="com.practika.ms_content.storage.BlobToMediaMigration">
+            <param name="directorio" value="media"/>
+            <param name="tabla" value="archivos_recursos"/>
+            <param name="clave" value="id"/>
+            <param name="carpeta" value="recursos"/>
+            <param name="columnaMime" value="tipo_contenido"/>
+        </customChange>
+    </changeSet>
+    <changeSet id="ms-content-media-no-blob-archivos_recursos" author="practika">
+        <addNotNullConstraint tableName="archivos_recursos" columnName="ruta_archivo" columnDataType="VARCHAR(512)"/>
+        <dropColumn tableName="archivos_recursos" columnName="contenido"/>
+    </changeSet>
+    <changeSet id="ms-content-media-path-archivos_evaluacion" author="practika">
+        <addColumn tableName="archivos_evaluacion"><column name="ruta_archivo" type="VARCHAR(512)"/></addColumn>
+    </changeSet>
+    <changeSet id="ms-content-media-export-archivos_evaluacion" author="practika">
+        <validCheckSum>9:2c382c9284488691fbff5697fd9c37a8</validCheckSum>
+        <validCheckSum>9:7d5c8e085f54e4b136ea7ba933b12fb5</validCheckSum>
+        <customChange class="com.practika.ms_content.storage.BlobToMediaMigration">
+            <param name="directorio" value="media"/>
+            <param name="tabla" value="archivos_evaluacion"/>
+            <param name="clave" value="id"/>
+            <param name="carpeta" value="publicaciones"/>
+            <param name="columnaMime" value="tipo_contenido"/>
+        </customChange>
+    </changeSet>
+    <changeSet id="ms-content-media-no-blob-archivos_evaluacion" author="practika">
+        <addNotNullConstraint tableName="archivos_evaluacion" columnName="ruta_archivo" columnDataType="VARCHAR(512)"/>
+        <dropColumn tableName="archivos_evaluacion" columnName="contenido"/>
+    </changeSet>
+</databaseChangeLog>

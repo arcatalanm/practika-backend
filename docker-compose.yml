@@ -69,7 +69,10 @@ services:
 
   ms-auth:
     build: ./ms-auth
+    volumes:
+      - ./ms-auth/media:/app/media
     environment:
+      MEDIA_STORAGE_PATH: /app/media
       DB_DIALECT: org.hibernate.dialect.MySQLDialect
       DB_URL: jdbc:mysql://db-auth:3306/practika_auth?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
       DB_USERNAME: root
@@ -104,7 +107,10 @@ services:
 
   ms-content:
     build: ./ms-content
+    volumes:
+      - ./ms-content/media:/app/media
     environment:
+      MEDIA_STORAGE_PATH: /app/media
       DB_DIALECT: org.hibernate.dialect.MySQLDialect
       GRADING_INTERNAL_TOKEN: ${GRADING_INTERNAL_TOKEN:-practika-grading-dev-key-change-in-production-2026}
       DB_URL: jdbc:mysql://db-content:3306/practika_content?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC

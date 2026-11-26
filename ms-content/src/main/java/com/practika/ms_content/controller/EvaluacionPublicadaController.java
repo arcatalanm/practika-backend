@@ -16,6 +16,7 @@ public class EvaluacionPublicadaController {
     @GetMapping({"/cursos/{idCurso}/evaluaciones", "/secciones/asignaturas/{idCurso}/evaluaciones"})
     public List<EvaluacionPublicadaResponse> listar(@PathVariable Integer idCurso,Authentication auth){return service.listar(idCurso,auth);}
     @PostMapping("/cursos/{idCurso}/evaluaciones/publicar") @PreAuthorize("hasRole('PROFESOR')")
+    @io.swagger.v3.oas.annotations.Operation(deprecated = true, summary = "Obsoleto (410): seleccionar cada evaluacion con POST /api/v1/content/secciones/asignaturas/{idCurso}/evaluaciones/{id}/seleccionar")
     public List<EvaluacionPublicadaResponse> publicar(@PathVariable Integer idCurso,Authentication auth){return service.publicarCurso(idCurso,auth);}
     @GetMapping({"/cursos/{idCurso}/seleccion", "/secciones/asignaturas/{idCurso}/seleccion"}) @PreAuthorize("hasRole('PROFESOR')")
     public List<EvaluacionPublicadaService.Seleccion> seleccion(@PathVariable Integer idCurso, Authentication auth) {
@@ -42,6 +43,6 @@ public class EvaluacionPublicadaController {
         return ResponseEntity.ok().contentType(MediaType.parseMediaType(file.getTipoContenido())).cacheControl(CacheControl.noStore())
                 .header("X-Content-Type-Options","nosniff")
                 .header(HttpHeaders.CONTENT_DISPOSITION,ContentDisposition.inline().filename(file.getNombre(),StandardCharsets.UTF_8).build().toString())
-                .body(new ByteArrayResource(file.getContenido()));
+                .body(service.contenido(file));
     }
 }

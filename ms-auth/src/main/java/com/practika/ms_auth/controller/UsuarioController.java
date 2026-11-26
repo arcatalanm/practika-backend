@@ -79,7 +79,6 @@ public class UsuarioController {
         return usuarioService.asignarSeccion(run, dto.idSeccion());
     }
 
-    /** Reseteo de contraseña: solo ADMIN. */
     @PutMapping("/{run}/password")
     @PreAuthorize("hasRole('ADMIN')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
@@ -89,7 +88,6 @@ public class UsuarioController {
         usuarioService.restablecerPassword(run, dto);
     }
 
-    /** Activa o desactiva un usuario (borrado lógico). */
     @PatchMapping("/{run}/estado")
     @PreAuthorize("hasRole('ADMIN')")
     public UsuarioResponseDTO cambiarEstado(
@@ -98,7 +96,6 @@ public class UsuarioController {
         return usuarioService.cambiarEstado(run, dto.getActivo());
     }
 
-    /** Borrado lógico: el usuario queda inactivo. */
     @DeleteMapping("/{run}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasRole('ADMIN')")

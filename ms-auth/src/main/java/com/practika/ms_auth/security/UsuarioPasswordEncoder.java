@@ -5,7 +5,6 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import com.practika.ms_auth.exception.BadRequestException;
 
-/** BCrypt has a 72-byte input limit, including multi-byte Unicode characters. */
 public class UsuarioPasswordEncoder implements PasswordEncoder {
     private final BCryptPasswordEncoder delegate = new BCryptPasswordEncoder(12);
 

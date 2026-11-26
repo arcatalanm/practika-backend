@@ -24,4 +24,8 @@ public class NivelEducativo {
 
     @Column(name = "activo", nullable = false)
     private Boolean activo = true;
+
+    public boolean esSoportado() {
+        return "1° Básico".equalsIgnoreCase(codigo) || "2° Básico".equalsIgnoreCase(codigo);
+    }
 }

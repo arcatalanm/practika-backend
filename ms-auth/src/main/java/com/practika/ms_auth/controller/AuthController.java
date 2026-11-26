@@ -34,7 +34,6 @@ public class AuthController {
         return authService.login(dto);
     }
 
-    /** Registro reservado a ADMIN; por esta ruta solo se crean estudiantes. */
     @PostMapping("/register")
     @PreAuthorize("hasRole('ADMIN')")
     @ResponseStatus(HttpStatus.CREATED)
@@ -48,7 +47,6 @@ public class AuthController {
         return authService.perfil(runAutenticado(authentication));
     }
 
-    /** Identity already checked against the current account by the auth filter. */
     @GetMapping("/identity")
     @SecurityRequirement(name = "bearerAuth")
     public IdentityResponse identidad(Authentication authentication) {

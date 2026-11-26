@@ -12,7 +12,6 @@ import lombok.Setter;
 @AllArgsConstructor
 public class LoginRequestDTO {
 
-    /** Puede ser el RUN del usuario o su correo electrónico. */
     @NotBlank(message = "El usuario (RUN o correo) es obligatorio")
     private String usuario;
 

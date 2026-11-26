@@ -12,7 +12,7 @@ public class ArchivoRecurso {
     @Column(name="id_pregunta") private Integer idPregunta;
     @Column(name="nombre",nullable=false,length=200) private String nombre;
     @Column(name="tipo_contenido",nullable=false,length=80) private String tipoContenido;
-    @Lob @Column(name="contenido",nullable=false,columnDefinition="LONGBLOB") private byte[] contenido;
+    @Column(name="ruta_archivo", nullable=false, length=512) private String rutaArchivo;
 
     @Transient @com.fasterxml.jackson.annotation.JsonIgnore
     public Integer getIdEvaluacion() { return evaluacion == null ? null : evaluacion.getIdEvaluacion(); }

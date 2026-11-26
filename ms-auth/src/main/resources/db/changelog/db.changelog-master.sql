@@ -1,6 +1,5 @@
 --liquibase formatted sql
 
-
 --changeset practika:auth-001-cursos
 CREATE TABLE IF NOT EXISTS `cursos` (
   `id_curso` INT AUTO_INCREMENT NOT NULL,
@@ -30,10 +29,12 @@ CREATE TABLE IF NOT EXISTS `usuarios` (
 ALTER TABLE `usuarios` ADD CONSTRAINT `fk_usuarios_cursos` FOREIGN KEY (`id_curso`) REFERENCES `cursos` (`id_curso`) ON DELETE SET NULL;
 
 --changeset practika:auth-003-cursos-activo-legacy
--- Columnas legacy activo ya incluidas en CREATE TABLE.
+--validCheckSum: 9:20dccbb2dc22c00a7ba119923c34649f
+-- Columnas
 
 --changeset practika:auth-004-usuarios-activo-legacy
--- Columnas legacy activo ya incluidas en CREATE TABLE.
+--validCheckSum: 9:20dccbb2dc22c00a7ba119923c34649f
+-- Columnas
 
 --changeset practika:auth-100-dev-data context:@dev
 INSERT INTO `cursos` (`id_curso`, `nivel_educativo`, `letra_curso`, `activo`) VALUES (1, '7° Básico', 'A', 1);
@@ -140,7 +141,8 @@ CREATE TABLE `fotos_perfil` (
 );
 
 --changeset practika:auth-009-section-identity-and-enrollment-history
--- MySQL requires removing the referencing foreign key before changing the identity column.
+--validCheckSum: 9:023e37ab0e39e45c099f0ece4eaa5be2
+-- Columnas y relaciones
 ALTER TABLE `usuarios` DROP FOREIGN KEY `fk_usuarios_secciones`;
 ALTER TABLE `secciones` MODIFY COLUMN `id_seccion` INT NOT NULL AUTO_INCREMENT;
 ALTER TABLE `usuarios` ADD CONSTRAINT `fk_usuarios_secciones`
@@ -168,8 +170,9 @@ FROM `usuarios` u JOIN `roles` r ON r.`id_rol` = u.`id_rol`
 WHERE r.`codigo` = 'ESTUDIANTE' AND u.`id_seccion` IS NOT NULL;
 
 --changeset practika:auth-010-grade-sections
+--validCheckSum: 9:0429cc062d87aa6e92f03ee19894ddb6
 --validCheckSum: 9:90ce5b2b6d65d080b9b4e6493ba6b679
--- MySQL commits DDL separately. Every structural step can resume after a partial failure.
+-- Datos
 UPDATE niveles_educativos SET activo = 0 WHERE codigo NOT IN ('1° Básico','2° Básico','3° Básico','4° Básico','5° Básico','6° Básico','7° Básico','8° Básico');
 UPDATE niveles_educativos SET nombre = CASE codigo WHEN '1° Básico' THEN 'Primero básico' WHEN '2° Básico' THEN 'Segundo básico' WHEN '3° Básico' THEN 'Tercero básico' WHEN '4° Básico' THEN 'Cuarto básico' WHEN '5° Básico' THEN 'Quinto básico' WHEN '6° Básico' THEN 'Sexto básico' WHEN '7° Básico' THEN 'Séptimo básico' WHEN '8° Básico' THEN 'Octavo básico' ELSE nombre END;
 SET @practika_ddl = IF((SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='secciones' AND COLUMN_NAME='id_seccion_canonica') > 0, 'SELECT 1', 'ALTER TABLE secciones ADD COLUMN id_seccion_canonica INT NULL');
@@ -186,7 +189,7 @@ DEALLOCATE PREPARE practika_migration;
 UPDATE matriculas m JOIN secciones s ON s.id_seccion=m.id_seccion SET m.id_seccion_origen=m.id_seccion,m.id_seccion=s.id_seccion_canonica WHERE s.id_seccion_canonica IS NOT NULL;
 UPDATE usuarios u JOIN secciones s ON s.id_seccion=u.id_seccion SET u.id_seccion=s.id_seccion_canonica WHERE s.id_seccion_canonica IS NOT NULL;
 UPDATE secciones s JOIN niveles_educativos n ON n.id_nivel_educativo=s.id_nivel_educativo SET s.activo=0 WHERE n.activo=0;
--- The old unique index also supports the level foreign key; replace that support first.
+-- Columnas y relaciones
 SET @practika_ddl = IF((SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='secciones' AND INDEX_NAME='ix_secciones_nivel') > 0, 'SELECT 1', 'CREATE INDEX ix_secciones_nivel ON secciones(id_nivel_educativo)');
 PREPARE practika_migration FROM @practika_ddl;
 EXECUTE practika_migration;
@@ -211,7 +214,8 @@ DEALLOCATE PREPARE practika_migration;
 DROP TABLE IF EXISTS secciones_nivel_migracion;
 
 --changeset practika:auth-011-mvp-demo-accounts context:@demo
--- Demo-only accounts. Existing accounts and section states are never overwritten.
+--validCheckSum: 9:798adbf2d00204a6cc56ac4db27c85ea
+-- Inserts
 --preconditions onFail:HALT onError:HALT
 --precondition-sql-check expectedResult:0 SELECT COUNT(*) FROM usuarios WHERE run IN (20999001,20999002,20999101,20999211,20999212,20999213,20999214,20999102,20999221,20999222,20999223,20999224,20999103,20999231,20999232,20999233,20999234,20999104,20999241,20999242,20999243,20999244,20999105,20999251,20999252,20999253,20999254,20999106,20999261,20999262,20999263,20999264,20999107,20999271,20999272,20999273,20999274,20999108,20999281,20999282,20999283,20999284) OR email IN ('admin.demo@practika.example.test','utp.demo@practika.example.test','profesor1.demo@practika.example.test','estudiante11.demo@practika.example.test','estudiante12.demo@practika.example.test','estudiante13.demo@practika.example.test','estudiante14.demo@practika.example.test','profesor2.demo@practika.example.test','estudiante21.demo@practika.example.test','estudiante22.demo@practika.example.test','estudiante23.demo@practika.example.test','estudiante24.demo@practika.example.test','profesor3.demo@practika.example.test','estudiante31.demo@practika.example.test','estudiante32.demo@practika.example.test','estudiante33.demo@practika.example.test','estudiante34.demo@practika.example.test','profesor4.demo@practika.example.test','estudiante41.demo@practika.example.test','estudiante42.demo@practika.example.test','estudiante43.demo@practika.example.test','estudiante44.demo@practika.example.test','profesor5.demo@practika.example.test','estudiante51.demo@practika.example.test','estudiante52.demo@practika.example.test','estudiante53.demo@practika.example.test','estudiante54.demo@practika.example.test','profesor6.demo@practika.example.test','estudiante61.demo@practika.example.test','estudiante62.demo@practika.example.test','estudiante63.demo@practika.example.test','estudiante64.demo@practika.example.test','profesor7.demo@practika.example.test','estudiante71.demo@practika.example.test','estudiante72.demo@practika.example.test','estudiante73.demo@practika.example.test','estudiante74.demo@practika.example.test','profesor8.demo@practika.example.test','estudiante81.demo@practika.example.test','estudiante82.demo@practika.example.test','estudiante83.demo@practika.example.test','estudiante84.demo@practika.example.test')
 --precondition-sql-check expectedResult:0 SELECT COUNT(*) FROM secciones s JOIN niveles_educativos n ON n.id_nivel_educativo=s.id_nivel_educativo WHERE s.id_seccion_canonica IS NULL AND n.activo=1 AND s.activo=0
@@ -282,7 +286,8 @@ UPDATE niveles_educativos SET activo = 1 WHERE codigo IN ('1° Básico','2° Bá
 UPDATE secciones s JOIN niveles_educativos n ON n.id_nivel_educativo = s.id_nivel_educativo SET s.activo = 0 WHERE n.activo = 0;
 
 --changeset practika:auth-013-fifteen-students-four-subject-teachers context:@dev
--- Update only the known development fixture accounts. Never delete account/enrollment history.
+--validCheckSum: 9:afd0ca45e87315d9bc98777d3db94746
+-- Inserts
 --preconditions onFail:HALT onError:HALT
 --precondition-sql-check expectedResult:12 SELECT COUNT(*) FROM usuarios WHERE run IN (12345670,12345672,12345673,12345674,12345675,12345676,12345677,12345680,12345679,12345671,12345682,12345683) AND email LIKE '%@practika.local'
 --precondition-sql-check expectedResult:0 SELECT COUNT(*) FROM usuarios WHERE run BETWEEN 21999001 AND 21999007 OR email IN ('estudiante09@practika.local','estudiante10@practika.local','estudiante11@practika.local','estudiante12@practika.local','estudiante13@practika.local','estudiante14@practika.local','estudiante15@practika.local')
@@ -304,7 +309,7 @@ WHERE run_estudiante IN (12345670,12345672,12345673,12345674,12345675,12345676,1
 INSERT INTO matriculas (run_estudiante,id_seccion,fecha_inicio,activa,origen)
 SELECT u.run,@mvp_primero,CURRENT_TIMESTAMP(6),1,'DEMO' FROM usuarios u WHERE u.run IN (12345670,12345672,12345673,12345674,12345675,12345676,12345677,12345680,21999001,21999002,21999003,21999004,21999005,21999006,21999007)
 AND NOT EXISTS (SELECT 1 FROM matriculas m WHERE m.run_estudiante=u.run AND m.activa=1);
--- Retire only the previous explicitly identified @demo account set, if that optional context was used.
+-- Datos
 UPDATE matriculas m JOIN usuarios u ON u.run=m.run_estudiante SET m.activa=0,m.fecha_fin=GREATEST(CURRENT_TIMESTAMP(6),m.fecha_inicio)
 WHERE m.activa=1 AND u.run BETWEEN 20999101 AND 20999284 AND u.email LIKE '%.demo@practika.example.test';
 UPDATE usuarios SET activo=0 WHERE run BETWEEN 20999101 AND 20999284 AND email LIKE '%.demo@practika.example.test';
@@ -318,7 +323,8 @@ UPDATE secciones s JOIN niveles_educativos n ON n.id_nivel_educativo=s.id_nivel_
 SET s.activo=CASE WHEN n.codigo IN ('1° Básico','2° Básico') AND s.id_seccion_canonica IS NULL THEN 1 ELSE 0 END;
 
 --changeset practika:auth-015-mvp-eight-first-seven-second context:@dev
--- Move only the fixture students, retaining their previous enrollment history and passwords.
+--validCheckSum: 9:213a7b1e8cfa03b49d9a5a8c8d41ec5e
+-- Columnas y relaciones
 --preconditions onFail:HALT onError:HALT
 --precondition-sql-check expectedResult:15 SELECT COUNT(*) FROM usuarios u JOIN roles r ON r.id_rol=u.id_rol WHERE r.codigo='ESTUDIANTE' AND u.activo=1 AND u.run IN (12345670,12345672,12345673,12345674,12345675,12345676,12345677,12345680,21999001,21999002,21999003,21999004,21999005,21999006,21999007)
 SET @mvp_primero=(SELECT s.id_seccion FROM secciones s JOIN niveles_educativos n ON n.id_nivel_educativo=s.id_nivel_educativo WHERE n.codigo='1° Básico' AND s.id_seccion_canonica IS NULL);
@@ -335,7 +341,8 @@ WHERE u.run IN (12345670,12345672,12345673,12345674,12345675,12345676,12345677,1
 AND NOT EXISTS (SELECT 1 FROM matriculas m WHERE m.run_estudiante=u.run AND m.activa=1);
 
 --changeset practika:auth-016-reviewed-twenty-development-accounts context:@dev
--- Exactly twenty development accounts; never delete an unrecognized account.
+--validCheckSum: 9:3aea00f2c054d64b25e0bdcb99081443
+-- Datos
 --preconditions onFail:HALT onError:HALT
 --precondition-sql-check expectedResult:20 SELECT COUNT(*) FROM usuarios WHERE run IN (11111111,12345678,12345679,12345671,12345682,12345670,12345672,12345673,12345674,12345675,12345676,12345677,12345680,21999001,21999002,21999003,21999004,21999005,21999006,21999007)
 --precondition-sql-check expectedResult:0 SELECT COUNT(*) FROM usuarios WHERE run NOT IN (11111111,12345678,12345679,12345671,12345682,12345670,12345672,12345673,12345674,12345675,12345676,12345677,12345680,21999001,21999002,21999003,21999004,21999005,21999006,21999007) AND NOT ((run=12345683 AND email='profesor4@practika.local') OR (run BETWEEN 20999001 AND 20999284 AND email LIKE '%.demo@practika.example.test'))
@@ -362,5 +369,4 @@ UPDATE usuarios SET dv='9',id_rol=(SELECT id_rol FROM roles WHERE codigo='ESTUDI
 UPDATE usuarios SET dv='7',id_rol=(SELECT id_rol FROM roles WHERE codigo='ESTUDIANTE') WHERE run=21999005;
 UPDATE usuarios SET dv='5',id_rol=(SELECT id_rol FROM roles WHERE codigo='ESTUDIANTE') WHERE run=21999006;
 UPDATE usuarios SET dv='3',id_rol=(SELECT id_rol FROM roles WHERE codigo='ESTUDIANTE') WHERE run=21999007;
--- Keep passwords, names, the eight/seven student distribution and enrollment history.
--- Application-created accounts are not reset; the precondition stops this dev-only cleanup if any exist.
+-- Columnas y relaciones

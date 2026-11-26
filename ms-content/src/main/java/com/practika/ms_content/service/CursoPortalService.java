@@ -14,7 +14,6 @@ import com.practika.ms_content.dto.*;
 import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 
-/** Compatibility facade. Course rules and persistence belong to ms-academic. */
 @Service @RequiredArgsConstructor
 public class CursoPortalService {
     private final AcademicClient academic;

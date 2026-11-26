@@ -1,6 +1,5 @@
 --liquibase formatted sql
 
-
 --changeset practika:academic-001-asignaturas
 CREATE TABLE IF NOT EXISTS `asignaturas` (
   `id_asignatura` INT AUTO_INCREMENT NOT NULL,
@@ -40,9 +39,9 @@ INSERT INTO `objetivo_aprendizajes` (`id_aprendizaje`, `id_asignatura`, `descrip
 --changeset practika:academic-003-asignaturas-activo
 ALTER TABLE `asignaturas` ADD COLUMN `activo` BOOLEAN DEFAULT 1 NOT NULL;
 
-
 --changeset practika:academic-004-course-ownership
--- Data is copied explicitly from content during cutover, preserving identifiers.
+--validCheckSum: 9:14f1ee6afedf0eb47c60f49dac69f7f0
+-- Tablas
 CREATE TABLE `periodos_academicos` (
   `id_periodo_academico` INT AUTO_INCREMENT PRIMARY KEY,
   `codigo` VARCHAR(20) NOT NULL,
@@ -89,8 +88,8 @@ ALTER TABLE cursos_portal ADD CONSTRAINT fk_cursos_portal_periodos FOREIGN KEY(i
 ALTER TABLE cursos_portal ADD COLUMN clave_seccion_asignatura VARCHAR(80) GENERATED ALWAYS AS (CASE WHEN id_periodo_academico IS NULL THEN CONCAT(id_seccion,':',id_asignatura) ELSE NULL END) STORED UNIQUE;
 
 --changeset practika:academic-006b-mvp-history-stable-id context:@dev
--- Keep new development databases compatible with the observed legacy catalog (4=English, 5=History).
--- Existing subjects and references are never renumbered.
+--validCheckSum: 9:504af3c64762cd8fd1217dda8a8a5d0e
+-- Inserts
 --preconditions onFail:HALT onError:HALT
 --precondition-sql-check expectedResult:0 SELECT COUNT(*) FROM asignaturas WHERE id_asignatura=5 AND nombre_materia<>'Historia' AND NOT EXISTS (SELECT 1 FROM asignaturas h WHERE h.nombre_materia='Historia')
 INSERT INTO asignaturas (id_asignatura,nombre_materia,activo)
@@ -132,7 +131,8 @@ CREATE TABLE docentes_asignaturas (
 );
 
 --changeset practika:academic-011-real-mvp-fixtures context:@dev
--- Shared IDs are a fixture contract between independent academic/content databases.
+--validCheckSum: 9:e1e86ff9fa05dedc8258bbb13bbe0961
+-- Inserts
 --preconditions onFail:HALT onError:HALT
 --precondition-sql-check expectedResult:4 SELECT COUNT(*) FROM asignaturas WHERE activo=1 AND ((id_asignatura=1 AND nombre_materia='Matemática') OR (id_asignatura=2 AND nombre_materia='Lenguaje') OR (id_asignatura=3 AND nombre_materia='Ciencias') OR (id_asignatura=5 AND nombre_materia='Historia'))
 --precondition-sql-check expectedResult:0 SELECT COUNT(*) FROM objetivo_aprendizajes WHERE id_aprendizaje BETWEEN 910001 AND 910008 OR codigo LIKE 'OA-MVP-%'
@@ -159,7 +159,8 @@ ALTER TABLE docentes_asignaturas ADD COLUMN ambos_basicos BOOLEAN NOT NULL DEFAU
 UPDATE docentes_asignaturas SET ambos_basicos=1 WHERE run_profesor IN (12345679,12345671,12345682,12345683);
 
 --changeset practika:academic-014-four-subject-image-objectives context:@dev
--- Keep the shared objective IDs aligned with ms-content's 16 unit fixtures.
+--validCheckSum: 9:e8594e26091763e1b8473e83473f3c4a
+-- Datos
 UPDATE objetivo_aprendizajes SET descripcion_objetivo='Resolver operaciones y problemas de cálculo con números naturales.' WHERE id_aprendizaje=910001;
 UPDATE objetivo_aprendizajes SET descripcion_objetivo='Reconocer figuras geométricas planas y sus propiedades.' WHERE id_aprendizaje=910002;
 UPDATE objetivo_aprendizajes SET descripcion_objetivo='Identificar cuerpos geométricos y describir sus características.' WHERE id_aprendizaje=910009;
@@ -187,11 +188,13 @@ INSERT INTO objetivo_aprendizajes (id_aprendizaje,id_asignatura,codigo,descripci
 (910016,5,'OA-MVP-HIS-04','Interpretar mapas y representar información espacial.');
 
 --changeset practika:academic-015-teacher-multiple-subjects
--- A teacher can teach more than one subject; each pair remains unique.
+--validCheckSum: 9:f0564f16e12ec952ddbb5406792a6c1e
+-- Columnas y relaciones
 ALTER TABLE docentes_asignaturas DROP PRIMARY KEY, ADD PRIMARY KEY (run_profesor,id_asignatura);
 
 --changeset practika:academic-016-reviewed-four-subjects-three-teachers context:@dev
--- Shared canonical subject/objective IDs are the academic/content fixture contract.
+--validCheckSum: 9:49dda4ab6c86c49953afbd2994afd420
+-- Datos
 --preconditions onFail:HALT onError:HALT
 --precondition-sql-check expectedResult:4 SELECT COUNT(*) FROM asignaturas WHERE (id_asignatura=1 AND nombre_materia='Matemática') OR (id_asignatura=2 AND nombre_materia='Lenguaje') OR (id_asignatura=3 AND nombre_materia='Ciencias') OR (id_asignatura=5 AND nombre_materia='Historia')
 --precondition-sql-check expectedResult:16 SELECT COUNT(*) FROM objetivo_aprendizajes WHERE id_aprendizaje BETWEEN 910001 AND 910016

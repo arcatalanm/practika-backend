@@ -1,16 +1,10 @@
 package com.practika.ms_auth.util;
 
-/**
- * Utilidades para validar el RUN chileno y calcular su dígito verificador.
- */
 public final class RunValidator {
 
     private RunValidator() {
     }
 
-    /**
-     * Valida que el RUN sea positivo y que el dígito verificador corresponda.
-     */
     public static boolean esValido(Integer run, Character dv) {
         if (run == null || run <= 0 || dv == null) {
             return false;
@@ -24,9 +18,6 @@ public final class RunValidator {
         return calcularDv(run) == dvNormalizado;
     }
 
-    /**
-     * Calcula el dígito verificador usando el módulo 11.
-     */
     public static char calcularDv(int run) {
         int suma = 0;
         int multiplicador = 2;

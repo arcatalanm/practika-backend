@@ -15,7 +15,6 @@ public class Seccion {
     @ManyToOne(fetch = FetchType.EAGER) @JoinColumn(name = "id_nivel_educativo", nullable = false)
     private NivelEducativo nivel;
 
-    // Retired rows remain as aliases so existing deliveries retain their original IDs.
     @ManyToOne(fetch = FetchType.EAGER) @JoinColumn(name = "id_seccion_canonica")
     private Seccion canonica;
 

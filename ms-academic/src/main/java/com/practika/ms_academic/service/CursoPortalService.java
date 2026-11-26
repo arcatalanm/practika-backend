@@ -28,7 +28,6 @@ public class CursoPortalService {
     private final AsignaturaRepository asignaturas;
     private final com.practika.ms_academic.repository.DocenteAsignaturaRepository especialidades;
 
-    /** Automatic section-subject links. There is no classroom or school-year setup. */
     @Transactional
     public List<CursoPortalResponse> listar(Authentication auth) {
         var user = usuarioActual();
@@ -43,7 +42,7 @@ public class CursoPortalService {
         var result = new java.util.ArrayList<CursoPortalResponse>();
         for (var section : sections) {
             if (!Boolean.TRUE.equals(section.activo())) continue;
-            if (ambosBasicos && !esPrimeroOSegundo(section)) continue;
+            if (!esPrimeroOSegundo(section)) continue;
             var current = cursos.findByIdSeccionAndPeriodoIsNullOrderByIdAsc(section.id());
             for (var subject : subjects) {
                 if (!Boolean.TRUE.equals(subject.getActivo())) continue;
@@ -77,6 +76,11 @@ public class CursoPortalService {
     @Transactional
     public CursoPortalResponse estado(Integer id, boolean activo) {
         CursoPortal c = buscar(id);
+        if (activo) {
+            var seccion = consultar(() -> identity.obtenerSeccion(c.getIdSeccion()), "No existe la sección");
+            if (!esPrimeroOSegundo(seccion) || !Boolean.TRUE.equals(seccion.activo()))
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Solo se admiten Primero y Segundo básico activos");
+        }
         c.setActivo(activo);
         return respuesta(cursos.save(c));
     }
@@ -97,7 +101,6 @@ public class CursoPortalService {
         return consultar(() -> identity.obtenerParticipantes(c.getIdSeccion()), "No se pudieron consultar los participantes");
     }
 
-    /** Lista actual del aula. El historial de participantes sigue disponible para la revisión. */
     public List<IdentityClient.PersonaPublicaRef> lista(Integer idCurso, Authentication auth) {
         CursoPortal curso = buscar(idCurso);
         validarAcceso(idCurso, usuarioActual(), auth);
@@ -125,6 +128,7 @@ public class CursoPortalService {
         if ("ESTUDIANTE".equalsIgnoreCase(user.rol()) && Boolean.TRUE.equals(consultar(
                 ()->identity.tieneMatricula(section.id(),user.run(),false),"No se pudo consultar la matrícula"))) return;
         if ("PROFESOR".equalsIgnoreCase(user.rol())
+                && esPrimeroOSegundo(section)
                 && atiendeSeccion(user, section, c.getIdAsignatura()) && Boolean.TRUE.equals(section.activo())
                 && imparte(user.run(), c.getIdAsignatura())) return;
         throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No tienes acceso a este curso del portal");
@@ -142,7 +146,7 @@ public class CursoPortalService {
         var runs = docentesDeCurso(c, seccion).stream()
                 .map(d -> new DocentePortalResponse(d.run(), d.nombreCompleto())).toList();
         return new CursoPortalResponse(c.getId(), seccion.id(), seccionNombre, c.getIdAsignatura(), subjectName,
-                c.getPeriodo() == null ? null : c.getPeriodo().getId(), "", subjectName, c.getDescripcion(), c.getActivo(), runs);
+                c.getPeriodo() == null ? null : c.getPeriodo().getId(), "", subjectName, c.getDescripcion(), vigente(c, seccion), runs);
     }
 
     @Transactional(readOnly = true)
@@ -151,10 +155,9 @@ public class CursoPortalService {
         var curso = buscar(id);
         var section = consultar(() -> identity.obtenerSeccion(curso.getIdSeccion()), "No existe la sección");
         return new CursoContextoResponse(curso.getId(), section.id(), curso.getIdAsignatura(),
-                curso.getPeriodo() == null ? null : curso.getPeriodo().getId(), curso.getActivo(), true);
+                curso.getPeriodo() == null ? null : curso.getPeriodo().getId(), vigente(curso, section), true);
     }
 
-    /** Includes old letter/year links so historical content and deliveries stay reachable. */
     @Transactional(readOnly=true)
     public List<Integer> vinculos(Integer id, Authentication auth) {
         validarAcceso(id,auth);
@@ -175,6 +178,10 @@ public class CursoPortalService {
         return materias.isEmpty() || materias.stream().anyMatch(e -> e.getIdAsignatura().equals(idAsignatura));
     }
 
+    private boolean vigente(CursoPortal curso, IdentityClient.SeccionRef section) {
+        return Boolean.TRUE.equals(curso.getActivo()) && Boolean.TRUE.equals(section.activo()) && esPrimeroOSegundo(section);
+    }
+
     private boolean esPrimeroOSegundo(IdentityClient.SeccionRef section) {
         return "Primero básico".equalsIgnoreCase(section.nivelEducativo())
                 || "Segundo básico".equalsIgnoreCase(section.nivelEducativo())
@@ -191,7 +198,6 @@ public class CursoPortalService {
     private List<IdentityClient.PersonaPublicaRef> docentesDeCurso(CursoPortal curso, IdentityClient.SeccionRef section) {
         var docentes = new java.util.LinkedHashMap<Integer, IdentityClient.PersonaPublicaRef>();
         var user = usuarioActual();
-        // Auth's section roster remains restricted to membership; cross-grade teachers use public teacher records below.
         boolean consultarSeccion = !"PROFESOR".equals(user.rol())
                 || (user.seccion() != null && section.id().equals(user.seccion().id()));
         if (consultarSeccion) {

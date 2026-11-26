@@ -13,7 +13,6 @@ import org.springframework.web.server.ResponseStatusException;
 import com.practika.ms_content.dto.EvaluacionPublicadaResponse;
 import com.practika.ms_content.service.EvaluacionPublicadaService;
 
-/** Only ms-grading may retrieve the answer key, using the submitting student's session. */
 @RestController
 @RequestMapping("/internal/content/correccion")
 public class CorreccionInternaController {

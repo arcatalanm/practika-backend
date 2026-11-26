@@ -24,7 +24,7 @@ public class SeccionService {
         List<Seccion> items = incluirInactivas ? secciones.findAll().stream()
                 .filter(s -> s.getCanonica() == null && Boolean.TRUE.equals(s.getNivel().getActivo()))
                 .sorted(java.util.Comparator.comparing(s -> s.getNivel().getCodigo())).toList() : secciones.findActivas();
-        return items.stream().map(SeccionMapper::toResponseDTO).toList();
+        return items.stream().filter(s -> s.getNivel().esSoportado()).map(SeccionMapper::toResponseDTO).toList();
     }
 
     @Transactional(readOnly = true)
@@ -53,7 +53,7 @@ public class SeccionService {
     @Transactional
     public SeccionResponseDTO cambiarEstado(Integer id, boolean activo) {
         Seccion s = buscar(id);
-        if (activo && !Boolean.TRUE.equals(s.getNivel().getActivo()))
+        if (activo && (!s.getNivel().esSoportado() || !Boolean.TRUE.equals(s.getNivel().getActivo())))
             throw new BadRequestException("Solo se admiten Primero y Segundo básico");
         s.setActivo(activo);
         return SeccionMapper.toResponseDTO(secciones.save(s));
@@ -65,7 +65,8 @@ public class SeccionService {
 
     private NivelEducativo buscarNivel(String valor) {
         String v = valor == null ? "" : valor.trim();
-        return niveles.findByCodigoIgnoreCaseOrNombreIgnoreCase(v, v).filter(n -> !Boolean.FALSE.equals(n.getActivo()))
+        return niveles.findByCodigoIgnoreCaseOrNombreIgnoreCase(v, v)
+                .filter(n -> n.esSoportado() && Boolean.TRUE.equals(n.getActivo()))
                 .orElseThrow(() -> new BadRequestException("Nivel educativo no válido o inactivo: " + valor));
     }
 

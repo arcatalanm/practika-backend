@@ -6,7 +6,6 @@ import com.practika.ms_content.client.AcademicClient;
 import com.practika.ms_content.dto.*;
 import lombok.RequiredArgsConstructor;
 
-/** Compatibility proxy; the academic service owns the period catalog. */
 @Service @RequiredArgsConstructor
 public class PeriodoAcademicoService {
     private final AcademicClient academic;

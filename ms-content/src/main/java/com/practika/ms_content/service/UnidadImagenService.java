@@ -20,6 +20,7 @@ public class UnidadImagenService {
     private final UnidadRepository unidades;
     private final UnidadImagenRepository imagenes;
     private final UnidadAccessService acceso;
+    private final com.practika.ms_content.storage.MediaStorage media;
 
     @Transactional
     public UnidadResponse guardar(Integer id, MultipartFile archivo) {
@@ -32,7 +33,7 @@ public class UnidadImagenService {
         if (bytes.length > MAX_BYTES) throw error(HttpStatus.PAYLOAD_TOO_LARGE, "La imagen supera 5 MB");
         String tipo = detectar(bytes);
         var imagen = imagenes.findById(id).orElseGet(() -> { var nueva = new UnidadImagen(); nueva.setIdUnidad(id); return nueva; });
-        imagen.setContenido(bytes); imagen.setTipoContenido(tipo); imagenes.save(imagen);
+        imagen.setRutaArchivo(media.guardar(bytes, "unidades", tipo)); imagen.setTipoContenido(tipo); imagenes.save(imagen);
         unidad.setImgUnidad("/api/v1/content/unidades/" + id + "/imagen?v=" + UUID.randomUUID());
         return UnidadResponse.from(unidades.save(unidad));
     }
@@ -42,6 +43,8 @@ public class UnidadImagenService {
         acceso.validarAcceso(id, auth); // UTP/PROFESOR siempre; estudiante solo si la unidad está en su curso
         return imagenes.findById(id).orElseThrow(() -> error(HttpStatus.NOT_FOUND, "La unidad no tiene imagen"));
     }
+
+    public byte[] contenido(UnidadImagen imagen) { return media.leer(imagen.getRutaArchivo()); }
 
     private String detectar(byte[] b) {
         if (b.length >= 8 && (b[0] & 0xff) == 0x89 && b[1] == 'P' && b[2] == 'N' && b[3] == 'G') return "image/png";

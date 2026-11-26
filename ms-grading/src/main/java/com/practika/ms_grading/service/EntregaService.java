@@ -184,7 +184,6 @@ public class EntregaService {
             throw error(HttpStatus.FORBIDDEN,"Las respuestas históricas sin contexto solo son visibles para su estudiante hasta vincularlas a un curso");
     }
 
-    /** Explicit reconstruction: never infer a historical course from the student's current section. */
     @Transactional
     public EntregaResponse vincularHistorica(Integer id,Integer idEvaluacion,Authentication auth) {
         var entrega=obtenerBloqueada(id);
@@ -230,7 +229,7 @@ public class EntregaService {
     private void copiarContexto(Entrega e,EvaluacionPublicadaRef eval) {
         e.setIdEvaluacionAsignada(eval.idEvaluacionAsignada());e.setIdCursoPortal(eval.idCursoPortal());e.setIdPeriodoAcademico(eval.idPeriodoAcademico());
         e.setIdSeccion(eval.idSeccion());e.setIdActividad(eval.idActividad());e.setIdPrueba(eval.idPrueba());
-        // Student-visible snapshots never retain the correct-answer flag from staff reconstructions.
+        // Oculta las respuestas correctas a estudiantes.
         var qs=eval.preguntas().stream().map(p->new PreguntaSnapshot(p.id(),p.texto(),p.tipo(),p.puntajeMaximo(),p.opciones().stream()
                 .map(o->new OpcionRef(o.id(),o.texto(),null)).toList(),p.materiales())).toList();
         e.setSnapshotEvaluacion(json.writeValueAsString(new EvaluacionPublicadaRef(eval.idEvaluacionAsignada(),eval.idCursoPortal(),eval.idPeriodoAcademico(),eval.idSeccion(),

@@ -21,10 +21,6 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Integer> {
 
     boolean existsByEmailIgnoreCaseAndRunNot(String email, Integer run);
 
-    /**
-     * Usuarios activos (activo = null se considera activo por compatibilidad
-     * con filas previas a la columna).
-     */
     @Query("""
             select u from Usuario u
             where (u.activo is null or u.activo = true)
@@ -36,9 +32,6 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Integer> {
             @Param("idSeccion") Integer idSeccion,
             @Param("rol") String rol);
 
-    /**
-     * Todos los usuarios, incluidos los inactivos (uso administrativo).
-     */
     @Query("""
             select u from Usuario u
             where (:idSeccion is null or u.seccion.id = :idSeccion)

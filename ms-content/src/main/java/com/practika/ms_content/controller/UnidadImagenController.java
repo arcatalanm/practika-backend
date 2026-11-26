@@ -1,6 +1,5 @@
 package com.practika.ms_content.controller;
 
-import java.util.concurrent.TimeUnit;
 import org.springframework.http.*;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -25,7 +24,7 @@ public class UnidadImagenController {
     public ResponseEntity<byte[]> obtener(@PathVariable Integer id, Authentication auth) {
         var img = service.obtener(id, auth);
         return ResponseEntity.ok().contentType(MediaType.parseMediaType(img.getTipoContenido()))
-                .cacheControl(CacheControl.maxAge(30, TimeUnit.DAYS).cachePrivate())
-                .header("X-Content-Type-Options", "nosniff").body(img.getContenido());
+                .cacheControl(CacheControl.noStore())
+                .header("X-Content-Type-Options", "nosniff").body(service.contenido(img));
     }
 }

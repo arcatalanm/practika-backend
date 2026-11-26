@@ -54,7 +54,6 @@ public class UsuarioService {
         return UsuarioMapper.toResponseDTO(buscarUsuario(run));
     }
 
-    /** Registro público: fuerza el rol ESTUDIANTE. */
     @Transactional
     public UsuarioResponseDTO registrar(UsuarioRequestDTO dto) {
         dto.setRol(ROL_POR_DEFECTO);
@@ -93,7 +92,6 @@ public class UsuarioService {
         return UsuarioMapper.toResponseDTO(usuario);
     }
 
-    /** Actualización de un usuario por parte de un ADMIN. */
     @Transactional
     public UsuarioResponseDTO actualizar(Integer run, UsuarioUpdateDTO dto) {
         Usuario usuario = usuarioRepository.findForUpdate(run)
@@ -116,7 +114,6 @@ public class UsuarioService {
         return UsuarioMapper.toResponseDTO(usuarioRepository.save(usuario));
     }
 
-    /** Reseteo de contraseña: solo lo usa un ADMIN. */
     @Transactional
     public void restablecerPassword(Integer run, PasswordResetDTO dto) {
         Usuario usuario = buscarUsuario(run);
@@ -124,9 +121,6 @@ public class UsuarioService {
         usuarioRepository.save(usuario);
     }
 
-    /**
-     * Borrado lógico: el usuario se marca como inactivo.
-     */
     @Transactional
     public void eliminar(Integer run) {
         cambiarEstado(run, false);
@@ -162,6 +156,8 @@ public class UsuarioService {
         Seccion seccion = seccionRepository.findById(idSeccion)
                 .orElseThrow(() -> new ResourceNotFoundException("No existe la sección con el ID " + idSeccion)).actual();
         if (!Boolean.TRUE.equals(seccion.getActivo())) throw new BadRequestException("La sección está inactiva");
+        if (!seccion.getNivel().esSoportado() || !Boolean.TRUE.equals(seccion.getNivel().getActivo()))
+            throw new BadRequestException("Solo se admiten Primero y Segundo básico");
         return seccion;
     }
 

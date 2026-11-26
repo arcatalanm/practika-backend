@@ -1,6 +1,5 @@
 ﻿--liquibase formatted sql
 
-
 --changeset practika:content-001-unidades
 CREATE TABLE IF NOT EXISTS `unidades` (
   `id_unidad` INT AUTO_INCREMENT NOT NULL,
@@ -87,13 +86,16 @@ ALTER TABLE `unidades_cursos` ADD CONSTRAINT `uq_unidad_curso` UNIQUE (`id_unida
 ALTER TABLE `unidades_cursos` ADD CONSTRAINT `fk_unidades_cursos_unidad` FOREIGN KEY (`id_unidad`) REFERENCES `unidades` (`id_unidad`) ON DELETE CASCADE;
 
 --changeset practika:content-020-activity-unit-column
--- Columna legacy id_unidad ya incluida en CREATE TABLE.
+--validCheckSum: 9:b26080e4e579fc53ef0021a859c078cd
+-- Columnas
 
 --changeset practika:content-021-test-unit-column
--- Columna legacy id_unidad ya incluida en CREATE TABLE.
+--validCheckSum: 9:b26080e4e579fc53ef0021a859c078cd
+-- Columnas
 
 --changeset practika:content-022-material-unit-column
--- Columna legacy id_unidad ya incluida en CREATE TABLE.
+--validCheckSum: 9:b26080e4e579fc53ef0021a859c078cd
+-- Columnas
 
 --changeset practika:content-023-relax-legacy-content-columns
 ALTER TABLE actividades MODIFY id_asignatura INT NULL, MODIFY id_curso INT NULL;
@@ -379,7 +381,8 @@ INSERT IGNORE INTO `tipos_pregunta` (`codigo`, `nombre`, `activo`) VALUES
 ('SELECCION_UNICA', 'Una alternativa', 1);
 
 --changeset practika:content-036-retire-unit-materials
--- Archive the retired unit-only resources; retain all question and activity resources.
+--validCheckSum: 9:36f240e72de007823d821bae969fafee
+-- Tablas
 CREATE TABLE `materiales_unidad_archivados` AS SELECT * FROM `materiales`
 WHERE `id_unidad` IS NOT NULL AND `id_pregunta` IS NULL AND `id_actividad` IS NULL;
 DELETE FROM `materiales` WHERE `id_unidad` IS NOT NULL AND `id_pregunta` IS NULL AND `id_actividad` IS NULL;
@@ -455,8 +458,8 @@ ALTER TABLE `archivos_recursos` ADD CONSTRAINT `chk_archivo_recurso_destino`
   CHECK ((`id_pregunta` IS NOT NULL) <> (`id_actividad` IS NOT NULL));
 
 --changeset practika:content-043-academic-course-reference
--- Courses are owned by academic. Keep the old tables as a cutover backup;
--- they must no longer constrain new assignments to academic-owned courses.
+--validCheckSum: 9:69083b5a50d4869ac5d1c776e935c1eb
+-- Columnas y relaciones
 ALTER TABLE `unidades_cursos` DROP FOREIGN KEY `fk_unidades_cursos_curso_portal`;
 
 --changeset practika:content-044-unified-evaluation-table
@@ -583,6 +586,7 @@ UPDATE `evaluaciones_asignadas` t JOIN `evaluaciones` e ON e.`tipo`='ACTIVIDAD' 
 UPDATE `evaluaciones_asignadas` t JOIN `evaluaciones` e ON e.`tipo`='PRUEBA' AND e.`id_legacy`=t.`id_prueba` SET t.`id_evaluacion`=e.`id_evaluacion` WHERE t.`id_prueba` IS NOT NULL;
 
 --changeset practika:content-057-evaluaciones_asignadas-evaluation-contract dbms:mysql
+--validCheckSum: 9:4ad47922c1fff5ef8df9f52e45fd9b2b
 --preconditions onFail:HALT onError:HALT
 --precondition-sql-check expectedResult:0 SELECT COUNT(*) FROM evaluaciones_asignadas WHERE id_evaluacion IS NULL
 ALTER TABLE `evaluaciones_asignadas`
@@ -597,7 +601,7 @@ ALTER TABLE `evaluaciones_asignadas`
   MODIFY COLUMN `id_evaluacion` INT NOT NULL,
   ADD CONSTRAINT `fk_publicacion_evaluacion` FOREIGN KEY (`id_evaluacion`) REFERENCES `evaluaciones` (`id_evaluacion`);
 
--- Legacy actividades/pruebas tables remain as cutover archives. Application writes use evaluaciones only.
+-- Columnas y relaciones
 
 --changeset practika:content-057-evaluaciones_asignadas-evaluation-contract-mariadb dbms:mariadb
 --preconditions onFail:HALT onError:HALT
@@ -631,7 +635,8 @@ CREATE TABLE IF NOT EXISTS `unidad_imagenes` (
 ALTER TABLE `unidades` ADD COLUMN `img_unidad` VARCHAR(255) NULL;
 
 --changeset practika:content-061-real-first-grade-fixtures context:@dev
--- Add curated material without deleting old publications, resources or grading history.
+--validCheckSum: 9:4f84029bc8b750ae57b66841986064c3
+-- Datos
 --preconditions onFail:HALT onError:HALT
 --precondition-sql-check expectedResult:0 SELECT COUNT(*) FROM unidades WHERE id_unidad BETWEEN 910001 AND 910008
 --precondition-sql-check expectedResult:0 SELECT COUNT(*) FROM evaluaciones WHERE id_evaluacion BETWEEN 920001 AND 920024
@@ -640,7 +645,7 @@ ALTER TABLE `unidades` ADD COLUMN `img_unidad` VARCHAR(255) NULL;
 --precondition-sql-check expectedResult:0 SELECT COUNT(*) FROM materiales WHERE id_material BETWEEN 950001 AND 950096
 --precondition-sql-check expectedResult:4 SELECT COUNT(*) FROM tipos_pregunta WHERE codigo IN ('SELECCION_UNICA','SELECCION_MULTIPLE','VERDADERO_FALSO','DESARROLLO')
 --precondition-sql-check expectedResult:1 SELECT COUNT(*) FROM tipos_material WHERE codigo='TEXTO'
--- Retire only original example evaluations; preserve their archived versions and answers.
+-- Datos
 UPDATE evaluaciones SET estado_activo=0 WHERE (tipo='ACTIVIDAD' AND id_legacy BETWEEN 1 AND 13) OR (tipo='PRUEBA' AND id_legacy BETWEEN 1 AND 12);
 UPDATE evaluaciones_asignadas p JOIN evaluaciones e ON e.id_evaluacion=p.id_evaluacion SET p.activa=0
 WHERE (e.tipo='ACTIVIDAD' AND e.id_legacy BETWEEN 1 AND 13) OR (e.tipo='PRUEBA' AND e.id_legacy BETWEEN 1 AND 12);
@@ -1183,14 +1188,16 @@ INSERT INTO preguntas (id_pregunta,id_evaluacion,texto_pregunta,id_tipo_pregunta
 INSERT INTO materiales (id_material,id_pregunta,id_tipo_material,titulo,contenido_texto,activo) SELECT 950096,930096,id_tipo_material,'Lee y observa: Nuestros sentidos y el cuidado del cuerpo','En una visita al patio, Nico mira una flor, escucha un pájaro y huele una hoja de menta con ayuda de su profesora. Antes de comer, se lava las manos. No prueba plantas ni sustancias desconocidas y evita acercarse a sonidos muy fuertes.',1 FROM tipos_material WHERE codigo='TEXTO';
 
 --changeset practika:content-062-mvp-history-subject-id context:@dev
--- content-061 may already be applied: repair its two History units without changing its checksum.
+--validCheckSum: 9:881fa6bfae26c863b6ed89940bde1307
+-- Datos
 --preconditions onFail:HALT onError:HALT
 --precondition-sql-check expectedResult:2 SELECT COUNT(*) FROM unidades WHERE (id_unidad=910005 AND id_objetivo=910005 AND id_asignatura IN (4,5)) OR (id_unidad=910006 AND id_objetivo=910006 AND id_asignatura IN (4,5))
 --precondition-sql-check expectedResult:0 SELECT COUNT(*) FROM unidades_cursos uc JOIN unidades u ON u.id_unidad=uc.id_unidad WHERE u.id_unidad IN (910005,910006) AND u.id_asignatura<>5
 UPDATE unidades SET id_asignatura=5 WHERE id_unidad IN (910005,910006) AND id_asignatura=4;
 
 --changeset practika:content-063-four-subject-image-units context:@dev
--- Align the development catalog with the 16 supplied unit thumbnails.
+--validCheckSum: 9:e68be4123bea3bee267f81b30a97c54b
+-- Datos
 UPDATE unidades SET titulo='Cálculo y operaciones', descripcion='Resuelve operaciones con números naturales y aplica estrategias de cálculo en problemas cotidianos.' WHERE id_unidad=910001;
 UPDATE unidades SET titulo='Geometría', descripcion='Reconoce figuras planas, sus elementos y sus propiedades en el entorno.' WHERE id_unidad=910002;
 UPDATE unidades SET titulo='Lectura', descripcion='Comprende textos narrativos e informativos, identifica ideas y realiza inferencias.' WHERE id_unidad=910003;
@@ -1218,7 +1225,8 @@ UPDATE evaluaciones SET titulo=REPLACE(titulo,'Seres vivos y sus necesidades','B
 UPDATE evaluaciones SET titulo=REPLACE(titulo,'Nuestros sentidos y el cuidado del cuerpo','Microscopía') WHERE id_unidad=910008;
 
 --changeset practika:content-064-image-unit-learning-content context:@dev
--- Add complete practice and assessment material for the eight new units.
+--validCheckSum: 9:b5683ab40cc9f899edfbaf0d1116990c
+-- Inserts
 INSERT INTO evaluaciones (id_evaluacion,tipo,id_unidad,titulo,estado_activo,cantidad_intentos,fecha_aplicacion) VALUES
 (921001,'ACTIVIDAD',910009,'Exploramos: Cuerpos geométricos',1,3,NULL),(921002,'PRUEBA',910009,'Prueba: Cuerpos geométricos',1,2,TIMESTAMP(CURRENT_DATE(),'09:00:00')),
 (921003,'ACTIVIDAD',910010,'Exploramos: Estadística',1,3,NULL),(921004,'PRUEBA',910010,'Prueba: Estadística',1,2,TIMESTAMP(CURRENT_DATE(),'09:00:00')),
@@ -1269,25 +1277,26 @@ JOIN unidades u ON u.id_unidad=e.id_unidad JOIN tipos_material t ON t.codigo='TE
 WHERE p.id_pregunta BETWEEN 931001 AND 931064;
 
 --changeset practika:content-065-unit-catalog-visibility
--- Retiring a catalog unit must not erase publications or student history.
+--validCheckSum: 9:c5f6e8a89eeda4b084e7993cf068184a
+-- Columnas y relaciones
 ALTER TABLE unidades ADD COLUMN activo BOOLEAN NOT NULL DEFAULT 1;
 
 --changeset practika:content-066-reviewed-questions-and-answers context:@dev
--- Explicit question/answer associations replace the old modulo-based alternatives.
--- Published snapshots and real submissions keep their original questions and options.
+--validCheckSum: 9:c25c3e9d7e861659bf590874fcfc3d81
+-- Datos
 --preconditions onFail:HALT onError:HALT
 --precondition-sql-check expectedResult:16 SELECT COUNT(*) FROM unidades WHERE id_unidad BETWEEN 910001 AND 910016
 --precondition-sql-check expectedResult:40 SELECT COUNT(*) FROM evaluaciones WHERE id_evaluacion IN (920001,920002,920003,920004,920005,920006,920007,920008,920009,920010,920011,920012,920013,920014,920015,920016,920017,920018,920019,920020,920021,920022,920023,920024,921001,921002,921003,921004,921005,921006,921007,921008,921009,921010,921011,921012,921013,921014,921015,921016)
 --precondition-sql-check expectedResult:160 SELECT COUNT(*) FROM preguntas WHERE id_pregunta IN (930001,930002,930003,930004,930005,930006,930007,930008,930009,930010,930011,930012,930013,930014,930015,930016,930017,930018,930019,930020,930021,930022,930023,930024,930025,930026,930027,930028,930029,930030,930031,930032,930033,930034,930035,930036,930037,930038,930039,930040,930041,930042,930043,930044,930045,930046,930047,930048,930049,930050,930051,930052,930053,930054,930055,930056,930057,930058,930059,930060,930061,930062,930063,930064,930065,930066,930067,930068,930069,930070,930071,930072,930073,930074,930075,930076,930077,930078,930079,930080,930081,930082,930083,930084,930085,930086,930087,930088,930089,930090,930091,930092,930093,930094,930095,930096,931002,931003,931004,931005,931006,931007,931008,931009,931010,931011,931012,931013,931014,931015,931016,931017,931018,931019,931020,931021,931022,931023,931024,931025,931026,931027,931028,931029,931030,931031,931032,931033,931034,931035,931036,931037,931038,931039,931040,931041,931042,931043,931044,931045,931046,931047,931048,931049,931050,931051,931052,931053,931054,931055,931056,931057,931058,931059,931060,931061,931062,931063,931064,931065)
 --precondition-sql-check expectedResult:0 SELECT COUNT(*) FROM opciones WHERE id_opcion BETWEEN 970001 AND 971000
 --precondition-sql-check expectedResult:4 SELECT COUNT(*) FROM tipos_pregunta WHERE codigo IN ('SELECCION_UNICA','SELECCION_MULTIPLE','VERDADERO_FALSO','DESARROLLO')
--- Archive only the six original example units. Direct access and history remain available.
+-- Datos
 UPDATE unidades SET activo=0 WHERE id_unidad BETWEEN 1 AND 6;
--- Retire copies of obsolete fixtures; a teacher can select the reviewed source again.
+-- Datos
 UPDATE evaluaciones_asignadas p JOIN evaluaciones e ON e.id_evaluacion=p.id_evaluacion SET p.activa=0
 WHERE e.id_evaluacion IN (920001,920002,920003,920004,920005,920006,920007,920008,920009,920010,920011,920012,920013,920014,920015,920016,920017,920018,920019,920020,920021,920022,920023,920024,921001,921002,921003,921004,921005,921006,921007,921008,921009,921010,921011,921012,921013,921014,921015,921016) OR (e.tipo='ACTIVIDAD' AND e.id_legacy BETWEEN 1 AND 13) OR (e.tipo='PRUEBA' AND e.id_legacy BETWEEN 1 AND 12);
 DELETE FROM opciones WHERE id_pregunta IN (930001,930002,930003,930004,930005,930006,930007,930008,930009,930010,930011,930012,930013,930014,930015,930016,930017,930018,930019,930020,930021,930022,930023,930024,930025,930026,930027,930028,930029,930030,930031,930032,930033,930034,930035,930036,930037,930038,930039,930040,930041,930042,930043,930044,930045,930046,930047,930048,930049,930050,930051,930052,930053,930054,930055,930056,930057,930058,930059,930060,930061,930062,930063,930064,930065,930066,930067,930068,930069,930070,930071,930072,930073,930074,930075,930076,930077,930078,930079,930080,930081,930082,930083,930084,930085,930086,930087,930088,930089,930090,930091,930092,930093,930094,930095,930096,931002,931003,931004,931005,931006,931007,931008,931009,931010,931011,931012,931013,931014,931015,931016,931017,931018,931019,931020,931021,931022,931023,931024,931025,931026,931027,931028,931029,931030,931031,931032,931033,931034,931035,931036,931037,931038,931039,931040,931041,931042,931043,931044,931045,931046,931047,931048,931049,931050,931051,931052,931053,931054,931055,931056,931057,931058,931059,931060,931061,931062,931063,931064,931065);
--- Disable generated support only; user-uploaded resources are preserved. No support is inserted.
+-- Datos
 UPDATE materiales SET activo=0 WHERE ((id_material BETWEEN 950001 AND 950096) OR (id_material BETWEEN 951001 AND 951100) OR (id_material BETWEEN 960001 AND 960016))
 AND id_pregunta IN (930001,930002,930003,930004,930005,930006,930007,930008,930009,930010,930011,930012,930013,930014,930015,930016,930017,930018,930019,930020,930021,930022,930023,930024,930025,930026,930027,930028,930029,930030,930031,930032,930033,930034,930035,930036,930037,930038,930039,930040,930041,930042,930043,930044,930045,930046,930047,930048,930049,930050,930051,930052,930053,930054,930055,930056,930057,930058,930059,930060,930061,930062,930063,930064,930065,930066,930067,930068,930069,930070,930071,930072,930073,930074,930075,930076,930077,930078,930079,930080,930081,930082,930083,930084,930085,930086,930087,930088,930089,930090,930091,930092,930093,930094,930095,930096,931002,931003,931004,931005,931006,931007,931008,931009,931010,931011,931012,931013,931014,931015,931016,931017,931018,931019,931020,931021,931022,931023,931024,931025,931026,931027,931028,931029,931030,931031,931032,931033,931034,931035,931036,931037,931038,931039,931040,931041,931042,931043,931044,931045,931046,931047,931048,931049,931050,931051,931052,931053,931054,931055,931056,931057,931058,931059,931060,931061,931062,931063,931064,931065);
 

@@ -22,7 +22,6 @@ public abstract class Evaluacion {
     @Column(name = "estado_activo") private Boolean estadoActivo = true;
     @Column(name = "cantidad_intentos", nullable = false) private Integer cantidadIntentos = 1;
 
-    /** Historical APIs retain their per-type identifier. New APIs use idEvaluacion. */
     @Transient
     public Integer getId() { return idLegacy == null ? idEvaluacion : idLegacy; }
     public void setId(Integer id) { this.idLegacy = id; }

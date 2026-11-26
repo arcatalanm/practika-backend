@@ -26,6 +26,7 @@ public class CatalogoController {
     @GetMapping("/niveles-educativos")
     public List<CatalogoResponseDTO> niveles() {
         return niveles.findByActivoTrueOrderByIdAsc().stream()
+                .filter(com.practika.ms_auth.model.NivelEducativo::esSoportado)
                 .sorted(java.util.Comparator.comparing(n -> n.getCodigo()))
                 .map(n -> new CatalogoResponseDTO(n.getId(), n.getCodigo(), n.getNombre()))
                 .toList();

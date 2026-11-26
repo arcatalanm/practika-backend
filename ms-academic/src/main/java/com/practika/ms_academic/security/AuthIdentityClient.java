@@ -3,7 +3,6 @@ package com.practika.ms_academic.security;
 import org.springframework.http.HttpHeaders;
 import org.springframework.web.client.RestClient;
 
-/** The token is opaque here; only ms-auth resolves it to a current identity. */
 public class AuthIdentityClient {
     private final RestClient client;
 

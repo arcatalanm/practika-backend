@@ -54,11 +54,6 @@ public class Usuario {
     @Column(name = "img_perfil", length = 255)
     private String imgPerfil;
 
-    /**
-     * Borrado lógico: los registros desactivados no se eliminan físicamente.
-     * Se deja nullable para que las filas existentes (sin columna) se
-     * consideren activas al aplicar ddl-auto=update.
-     */
     @Column(name = "activo")
     private Boolean activo = true;
 

@@ -20,6 +20,7 @@ public class MatriculaService {
         if(!"ESTUDIANTE".equals(usuario.getRol().getCodigo())||!Boolean.TRUE.equals(usuario.getActivo()))
             throw new com.practika.ms_auth.exception.BadRequestException("Se necesita una cuenta de estudiante activa");
         var seccion=secciones.findById(idSeccion).map(Seccion::actual).filter(s->Boolean.TRUE.equals(s.getActivo()))
+                .filter(s -> s.getNivel().esSoportado() && Boolean.TRUE.equals(s.getNivel().getActivo()))
                 .orElseThrow(()->new com.practika.ms_auth.exception.BadRequestException("La sección no existe o está inactiva"));
         usuario.setSeccion(seccion);sincronizar(usuario);return historial(run);
     }
@@ -31,11 +32,14 @@ public class MatriculaService {
         usuario.setSeccion(null);sincronizar(usuario);
     }
 
-    /** Caller holds the student's user-row lock; never overwrite or delete past enrollments. */
     @Transactional
     public void sincronizar(Usuario usuario) {
         boolean estudiante=usuario.getRol()!=null && "ESTUDIANTE".equals(usuario.getRol().getCodigo());
         Integer destino=estudiante && usuario.getSeccion()!=null ? usuario.getSeccion().getId() : null;
+        if (destino != null && (!usuario.getSeccion().getNivel().esSoportado()
+                || !Boolean.TRUE.equals(usuario.getSeccion().getNivel().getActivo())
+                || !Boolean.TRUE.equals(usuario.getSeccion().getActivo())))
+            throw new com.practika.ms_auth.exception.BadRequestException("Solo se puede matricular en Primero y Segundo básico activos");
         var vigentes=matriculas.findByRunEstudianteAndActivaTrue(usuario.getRun());
         if(vigentes.size()==1 && destino!=null && destino.equals(vigentes.getFirst().getSeccion().getId())) return;
         var ahora=LocalDateTime.now();

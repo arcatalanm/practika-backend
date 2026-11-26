@@ -31,13 +31,12 @@ public class ArchivoRecursoController {
     }
 
     @GetMapping("/recursos/archivos/{id}")
-    // Both activity and test attachments now share an evaluation owner.
     public ResponseEntity<Resource> obtener(@PathVariable String id,Authentication auth) {
         var archivo=service.obtener(id,auth);
         return ResponseEntity.ok().contentType(MediaType.parseMediaType(archivo.getTipoContenido())).cacheControl(CacheControl.noStore())
             .header("X-Content-Type-Options","nosniff")
             .header(HttpHeaders.CONTENT_DISPOSITION,ContentDisposition.inline().filename(archivo.getNombre(),StandardCharsets.UTF_8).build().toString())
-            .body(new ByteArrayResource(archivo.getContenido()));
+            .body(service.contenido(archivo));
     }
 
     @PostMapping(value="/autoria/evaluaciones/{id}/archivos",consumes=MediaType.MULTIPART_FORM_DATA_VALUE)

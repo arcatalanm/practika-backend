@@ -1,7 +1,6 @@
 # Entorno y secretos
 .env
 .env.*
-# Si quieres versionar la plantilla, borra la línea siguiente
 .env.example
 *.pem
 *.key
@@ -16,6 +15,8 @@
 *.log
 hs_err_pid*.log
 replay_pid*.log
+*.bak
+*.tmp
 *.hprof
 
 # Documentación y scripts internos
@@ -39,3 +40,7 @@ error-academic.txt
 Thumbs.db
 seed-data
 .run/
+
+# Archivos multimedia
+**/media/*
+!**/media/.gitkeep

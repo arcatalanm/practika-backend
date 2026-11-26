@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+    <include file="db/changelog/db.changelog-master.sql"/>
+    <changeSet id="ms-auth-media-path-fotos_perfil" author="practika">
+        <addColumn tableName="fotos_perfil"><column name="ruta_archivo" type="VARCHAR(512)"/></addColumn>
+    </changeSet>
+    <changeSet id="ms-auth-media-export-fotos_perfil" author="practika">
+        <validCheckSum>9:4f8280c4bf9e37a47e5d21c50c35b012</validCheckSum>
+        <validCheckSum>9:af01d5fab1e4c3f8c28616f012bd25c3</validCheckSum>
+        <customChange class="com.practika.ms_auth.storage.BlobToMediaMigration">
+            <param name="directorio" value="media"/>
+            <param name="tabla" value="fotos_perfil"/>
+            <param name="clave" value="run"/>
+            <param name="carpeta" value="perfiles"/>
+        </customChange>
+    </changeSet>
+    <changeSet id="ms-auth-media-no-blob-fotos_perfil" author="practika">
+        <addNotNullConstraint tableName="fotos_perfil" columnName="ruta_archivo" columnDataType="VARCHAR(512)"/>
+        <dropColumn tableName="fotos_perfil" columnName="contenido"/>
+    </changeSet>
+    <include file="db/changelog/db.changelog-primary-grades.sql"/>
+</databaseChangeLog>

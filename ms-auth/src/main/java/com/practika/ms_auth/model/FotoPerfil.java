@@ -6,5 +6,5 @@ import lombok.*;
 @Entity @Table(name="fotos_perfil") @Getter @Setter @NoArgsConstructor
 public class FotoPerfil {
     @Id @Column(name="run") private Integer run;
-    @Lob @Column(name="contenido", nullable=false, columnDefinition="MEDIUMBLOB") private byte[] contenido;
+    @Column(name="ruta_archivo", nullable=false, length=512) private String rutaArchivo;
 }

@@ -8,10 +8,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-/**
- * DTO para que un ADMIN actualice los datos de un usuario.
- * La contraseña se cambia mediante el endpoint de reseteo.
- */
 @Getter
 @Setter
 @NoArgsConstructor

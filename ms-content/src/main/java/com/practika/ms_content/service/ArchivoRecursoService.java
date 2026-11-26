@@ -21,6 +21,7 @@ public class ArchivoRecursoService {
     private final TipoMaterialRepository tipos;
     private final EvaluacionService evaluaciones;
     private final UnidadAccessService acceso;
+    private final com.practika.ms_content.storage.MediaStorage media;
     public static final int MAX_BYTES=25*1024*1024;
 
     @Transactional
@@ -57,7 +58,7 @@ public class ArchivoRecursoService {
         if(name.isBlank()) name="Recurso";
         name=name.substring(0,Math.min(name.length(),200));
         var archivo=new ArchivoRecurso(); archivo.setId(UUID.randomUUID().toString());archivo.setIdPregunta(idPregunta);archivo.setEvaluacion(evaluacion);
-        archivo.setNombre(name);archivo.setTipoContenido(type.mime());archivo.setContenido(bytes);archivos.save(archivo);
+        archivo.setNombre(name);archivo.setTipoContenido(type.mime());archivo.setRutaArchivo(media.guardar(bytes, "recursos", type.mime()));archivos.save(archivo);
         var material=new Material();material.setIdPregunta(idPregunta);material.setEvaluacion(evaluacion);material.setTitulo(name);
         material.setTipoMaterial(tipos.findByCodigoIgnoreCaseAndActivoTrue(type.codigo()).orElseThrow(()->error(HttpStatus.CONFLICT,"El tipo de recurso no está configurado")));
         material.setContenidoUrl("/api/v1/content/recursos/archivos/"+archivo.getId());
@@ -74,6 +75,8 @@ public class ArchivoRecursoService {
         return archivo;
     }
 
+    public org.springframework.core.io.Resource contenido(ArchivoRecurso archivo) { return media.recurso(archivo.getRutaArchivo()); }
+
     private Tipo detectar(byte[] bytes) {
         String start=new String(bytes,0,Math.min(bytes.length,16),StandardCharsets.ISO_8859_1);
         if(bytes.length>=8 && bytes[0]==(byte)0x89 && start.substring(1,8).equals("PNG\r\n\u001a\n")) return new Tipo("image/png","IMAGEN");
@@ -85,7 +88,6 @@ public class ArchivoRecursoService {
         throw error(HttpStatus.BAD_REQUEST,"Usa una imagen JPG o PNG, o un audio MP3, M4A, WAV u OGG");
     }
     private record Tipo(String mime,String codigo) {}
-    // Android recordings may use isom/mp42 rather than the M4A brand. Inspect tracks instead of the extension/brand.
     private boolean soloAudioMp4(byte[] bytes) {
         boolean[] tracks=new boolean[2];
         return explorarCajas(bytes,0,bytes.length,0,tracks) && tracks[0] && !tracks[1];

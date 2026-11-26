@@ -32,8 +32,8 @@ public class EvaluacionPublicadaService {
     private final CursoPortalService acceso;
     private final IdentityClient identity;
     private final JsonMapper json;
+    private final com.practika.ms_content.storage.MediaStorage media;
 
-    /** Upgrade bootstrap only: create a baseline for existing assignments, never replace a version. */
     @Transactional
     public void inicializarExistentes() {
         for(var id:asignaciones.findIdsPendientesDePublicacion()) publicarAsignacion(id,false);
@@ -54,7 +54,6 @@ public class EvaluacionPublicadaService {
                 .filter(e -> Boolean.TRUE.equals(e.getActiva())).map(e -> new Seleccion(e.getIdEvaluacion())).distinct().toList();
     }
 
-    /** Select exactly one source evaluation; previous versions and deliveries are retained. */
     @Transactional
     public void seleccionar(Integer idCurso, Integer idEvaluacion, boolean seleccionar, Authentication auth) {
         var user = identity.obtenerUsuarioActual();
@@ -147,13 +146,17 @@ public class EvaluacionPublicadaService {
     private MaterialDetalle material(Material m) {
         return new MaterialDetalle(m.getId(),m.getTipo(),m.getContenidoUrl(),m.getActivo(),m.getTitulo(),m.getContenidoTexto());
     }
+    public org.springframework.core.io.Resource contenido(ArchivoEvaluacion archivo) { return media.recurso(archivo.getRutaArchivo()); }
+
     private List<MaterialDetalle> copiarMateriales(List<MaterialDetalle> materiales,Integer id) {
         return materiales.stream().map(m->{
             String url=m.contenidoUrl(),prefix="/api/v1/content/recursos/archivos/";
             if(url!=null && url.startsWith(prefix)) {
                 var original=archivos.findById(url.substring(prefix.length())).orElseThrow(()->error(HttpStatus.CONFLICT,"Falta un archivo adjunto; corrige el material antes de publicar"));
                 var copia=new ArchivoEvaluacion();copia.setId(UUID.randomUUID().toString());copia.setIdEvaluacionAsignada(id);
-                copia.setNombre(original.getNombre());copia.setTipoContenido(original.getTipoContenido());copia.setContenido(original.getContenido().clone());
+                copia.setNombre(original.getNombre());copia.setTipoContenido(original.getTipoContenido());
+                media.recurso(original.getRutaArchivo());
+                copia.setRutaArchivo(original.getRutaArchivo());
                 copias.save(copia);url="/api/v1/content/recursos/evaluaciones/"+copia.getId();
             }
             return new MaterialDetalle(m.id(),m.tipo(),url,m.activo(),m.titulo(),m.contenidoTexto());
@@ -179,7 +182,6 @@ public class EvaluacionPublicadaService {
         return respuesta(e,staff(auth));
     }
 
-    /** The course, its teacher and the target student's enrollment are validated together. */
     @Transactional(readOnly=true)
     public EvaluacionPublicadaResponse paraEstudiante(Integer id,Integer run,boolean paraEnviar,Authentication auth) {
         var result=obtener(id,auth);

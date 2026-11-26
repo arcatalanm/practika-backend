@@ -114,8 +114,13 @@ public class UnidadService {
     public List<UnidadDetalleResponse> listarDeCurso(Integer idCurso, Authentication auth) {
         if (esRol(auth, "UTP")) {
             cursoPortalService.validarAcceso(idCurso, auth);
-            return asignaciones.findByIdCurso(idCurso).stream()
-                    .map(a -> construirDetalle(buscarUnidad(a.getIdUnidad()), true)).toList();
+            var contexto = cursoPortalService.contexto(idCurso);
+            return cursoPortalService.vinculos(idCurso).stream()
+                    .flatMap(idVinculo -> asignaciones.findByIdCurso(idVinculo).stream())
+                    .map(UnidadCurso::getIdUnidad).distinct()
+                    .map(this::buscarUnidad)
+                    .filter(unidad -> java.util.Objects.equals(unidad.getIdAsignatura(), contexto.idAsignatura()))
+                    .map(unidad -> construirDetalle(unidad, true)).toList();
         }
         return publicaciones.unidadesDeCurso(idCurso, auth);
     }
@@ -128,6 +133,8 @@ public class UnidadService {
     }
 
     public boolean estaAsignada(Integer idUnidad, Integer idCurso) {
+        if (!java.util.Objects.equals(buscarUnidad(idUnidad).getIdAsignatura(), cursoPortalService.contexto(idCurso).idAsignatura()))
+            return false;
         return cursoPortalService.vinculos(idCurso).stream().anyMatch(id -> asignaciones.existsByIdUnidadAndIdCurso(idUnidad,id));
     }
 

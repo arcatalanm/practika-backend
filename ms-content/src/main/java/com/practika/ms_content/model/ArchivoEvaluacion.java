@@ -8,5 +8,5 @@ public class ArchivoEvaluacion {
     @Column(name="id_evaluacion_asignada",nullable=false) private Integer idEvaluacionAsignada;
     @Column(name="nombre",nullable=false,length=200) private String nombre;
     @Column(name="tipo_contenido",nullable=false,length=80) private String tipoContenido;
-    @Lob @Column(name="contenido",nullable=false,columnDefinition="LONGBLOB") private byte[] contenido;
+    @Column(name="ruta_archivo", nullable=false, length=512) private String rutaArchivo;
 }

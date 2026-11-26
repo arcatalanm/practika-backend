@@ -18,6 +18,7 @@ import lombok.RequiredArgsConstructor;
 public class FotoPerfilService {
     private final FotoPerfilRepository fotos;
     private final UsuarioRepository usuarios;
+    private final com.practika.ms_auth.storage.MediaStorage media;
 
     @Transactional
     public UsuarioResponseDTO guardar(Integer run, MultipartFile archivo) {
@@ -45,13 +46,15 @@ public class FotoPerfilService {
             } finally { reader.dispose(); }
         } catch (IOException ex) { throw new BadRequestException("No se pudo leer la imagen"); }
         var usuario = usuarios.findById(run).orElseThrow(() -> new ResourceNotFoundException("No existe la cuenta"));
-        FotoPerfil foto = new FotoPerfil(); foto.setRun(run); foto.setContenido(jpeg); fotos.save(foto);
+        FotoPerfil foto = new FotoPerfil(); foto.setRun(run);
+        foto.setRutaArchivo(media.guardar(jpeg, "perfiles", "image/jpeg")); fotos.save(foto);
         usuario.setImgPerfil("/api/v1/auth/usuarios/" + run + "/foto?v=" + java.util.UUID.randomUUID());
         return UsuarioMapper.toResponseDTO(usuarios.save(usuario));
     }
 
     @Transactional(readOnly=true)
     public byte[] obtener(Integer run) {
-        return fotos.findById(run).orElseThrow(() -> new ResourceNotFoundException("La cuenta no tiene foto")).getContenido();
+        var foto = fotos.findById(run).orElseThrow(() -> new ResourceNotFoundException("La cuenta no tiene foto"));
+        return media.leer(foto.getRutaArchivo());
     }
 }

@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.*;
 import com.practika.ms_content.dto.*;
 import com.practika.ms_content.service.UnidadService;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -19,6 +20,7 @@ public class AsignacionController {
     private final UnidadService service;
 
     @PostMapping("/asignaciones")
+    @Operation(deprecated = true, summary = "Obsoleto (410): seleccionar cada evaluacion con POST /api/v1/content/secciones/asignaturas/{idCurso}/evaluaciones/{id}/seleccionar")
     @PreAuthorize("hasRole('PROFESOR')")
     @ResponseStatus(HttpStatus.CREATED)
     public UnidadCursoResponse asignar(@Valid @RequestBody UnidadCursoRequest dto, Authentication authentication) {
