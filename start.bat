@@ -31,6 +31,12 @@ for %%S in (ms-auth ms-academic ms-content ms-grading api-gateway) do (
 
 echo Los logs de los cinco servicios se muestran en esta ventana.
 echo Puedes detenerlos con Ctrl+Pausa o cerrando esta ventana.
+echo Esperando a que los servicios terminen de iniciar...
+powershell.exe -NoProfile -Command "$deadline=(Get-Date).AddMinutes(3); $pending=@(8081,8082,8083,8084,8080); while ($pending.Count -gt 0 -and (Get-Date) -lt $deadline) { $pending=@($pending | Where-Object { try { $response=Invoke-WebRequest ('http://127.0.0.1:' + $_ + '/v3/api-docs') -UseBasicParsing -TimeoutSec 1; $response.StatusCode -ne 200 } catch { $true } }); if ($pending.Count -gt 0) { Start-Sleep -Seconds 2 } }; if ($pending.Count -gt 0) { Write-Host ('No terminaron de iniciar los servicios en los puertos: ' + ($pending -join ', ')); Write-Host 'Revisa los errores de los logs anteriores.'; exit 1 }; Write-Host 'Backend listo: http://127.0.0.1:8080/swagger-ui.html' -ForegroundColor Green"
+if errorlevel 1 (
+    pause
+    exit /b 1
+)
 pause >nul
 
 endlocal
