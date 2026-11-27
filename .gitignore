@@ -32,6 +32,17 @@ error-academic.txt
 
 # Python
 **/__pycache__/
+*.pyc
+*.class
+
+# Utilidades locales
+*.ps1
+*.psm1
+*.psd1
+/iniciar-backend.bat
+/build-jars.bat
+/limpiar.bat
+/seed-assets/
 
 # Editores y sistema
 .vscode/

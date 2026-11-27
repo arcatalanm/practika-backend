@@ -8,49 +8,62 @@ Backend PRACTIKA Spring Boot + API Gateway. Cada servicio tiene su propia base d
 |---|---:|---|---|
 | `api-gateway` | 8080 | — | Punto de entrada único para las solicitudes de los clientes |
 | `ms-auth` | 8081 | `practika_xampp_auth` | Usuarios, secciones, matrículas, login/JWT |
-| `ms-academic` | 8082 | `practika_xampp_academic` | Asignaturas, OA
+| `ms-academic` | 8082 | `practika_xampp_academic` | Asignaturas, OA |
 | `ms-content` | 8083 | `practika_xampp_content` | Unidades, catálogo, publicaciones versionadas, archivos |
 | `ms-grading` | 8084 | `practika_xampp_grading` | Entregas, respuestas y revisión |
 
 ## Requisitos y ejecución
 
-- JDK 21 y MySQL de XAMPP iniciado desde su panel. La instalación local usa MariaDB 10.4 en `127.0.0.1:3306`; el dialecto predeterminado es `org.hibernate.dialect.MariaDBDialect`.
-- Desde esta carpeta, ejecuta `./iniciar-backend.bat` (PowerShell: `.\iniciar-backend.ps1`). Arranca los cuatro microservicios y el Gateway en paralelo mediante `mvnw.cmd spring-boot:run`, comprueba sus rutas y mantiene la consola abierta. **Ctrl+C detiene los cinco procesos.** Los logs quedan en `.run/<servicio>.log` y `.run/<servicio>.err.log`. Si un proceso falla o un puerto está ocupado, el script lo informa y detiene los procesos que inició.
-- **Los datos se conservan entre arranques.** El lanzador fuerza `RESET_DATABASE_ON_START=false` y `SPRING_LIQUIBASE_DROP_FIRST=false`, incluso si la terminal hereda valores antiguos. Liquibase conserva su historial y aplica solamente migraciones pendientes; el contexto `dev` carga los datos iniciales una sola vez. No es necesario importar SQL en phpMyAdmin. Usuario de base predeterminado: `root`, sin contraseña; configurable con `DB_USERNAME` y `DB_PASSWORD`.
-- El lanzador comparte las URLs locales y una clave interna temporal entre content y grading. No necesita Apache ni contenedores. Conservamos los archivos de Docker; Compose declara el dialecto MySQL para sus bases MySQL 8.4.
-- Cada servicio consulta su propia base. En XAMPP los nombres son `practika_xampp_*`; Docker usa `practika_*` en sus volúmenes persistentes. Comprueba el host, puerto y esquema del proceso antes de comparar datos en phpMyAdmin. El lanzador local no utiliza las bases anteriores `practika_*` de XAMPP.
-- Compila desde la raíz (`.\mvnw.cmd clean package`). Se construyen los cinco servicios y se ejecutan las pruebas unitarias. Para compilar y empaquetar sin ejecutarlas usa `-DskipTests`.
-- Para trabajar en un servicio por separado, arranca su MySQL y ejecuta el wrapper del servicio con `spring-boot:run`. Las peticiones autenticadas de academic, content y grading también necesitan `ms-auth`.
-- `build-jars.bat` construye todos los jars desde la raíz omitiendo la ejecución de pruebas con `limpiar.bat` limpia los módulos target. Los Dockerfile consumen `target/<servicio>-0.0.1-SNAPSHOT.jar`.
+Requiere JDK 21 y MySQL o MariaDB. Cada servicio utiliza una base independiente y aplica sus migraciones pendientes con Liquibase.
 
-### Pruebas unitarias con Mockito
+Para compilar y ejecutar las pruebas desde la raíz:
 
-Ejecuta `.\mvnw.cmd test` desde la raíz. Hay cinco pruebas con JUnit 5 y Mockito; no requieren MySQL ni servicios externos.
+```sh
+./mvnw clean package
+```
 
-### Conectar Android y comprobar peticiones
+En Windows, usa `mvnw.cmd` en lugar de `./mvnw`.
 
-1. Espera a que el lanzador muestre `Backend listo`. Swagger: `http://127.0.0.1:8080/swagger-ui.html`.
-2. Desde `../practika-ui`, ejecuta `.\Conectar-USB.bat` con el celular autorizado para depuración USB o el emulador encendido. El script verifica el Gateway y ejecuta `adb reverse tcp:8080 tcp:8080`.
-3. Compila e instala la variante **debug** de Android. `PRACTIKA_API_URL` en `gradle.properties` apunta a `http://127.0.0.1:8080/`; Retrofit envía desde allí las peticiones a los cuatro servicios a través del Gateway. El reenvío USB permite usar esa misma URL desde Android. Repite el reenvío al reconectar el dispositivo.
-4. Para comprobar las rutas desde el computador: `.\comprobar-conexion.ps1`. Para comprobar además login, perfil, cursos, unidades y entregas: `.\comprobar-conexion.ps1 -Usuario ana.lagos@practika.local`. Solicita la contraseña sin mostrarla y no imprime el token.
+### Desarrollo local
 
-Si no usas USB ni reenvío, el emulador estándar de Android alcanza el computador en `http://10.0.2.2:8080/`; un celular por Wi-Fi necesita la IP LAN del computador. Configura `-PPRACTIKA_API_URL=http://IP:8080/` al compilar debug. Una URL modificada requiere recompilar la app. La variante release usa su configuración HTTPS independiente.
+Inicia MySQL y ejecuta `./mvnw spring-boot:run` desde la carpeta de cada servicio, en terminales separadas. Inicia primero `ms-auth`, luego `ms-academic`, `ms-content`, `ms-grading` y `api-gateway`.
 
-Para iniciar un solo servicio conservando sus datos, ejecuta `.\iniciar-backend.ps1 -Service ms-auth` (o el nombre correspondiente). También puedes ejecutar Maven desde su carpeta (`.\mvnw.cmd spring-boot:run`); deja `RESET_DATABASE_ON_START=false` y `SPRING_LIQUIBASE_DROP_FIRST=false`. Usa el mismo `GRADING_INTERNAL_TOKEN` en content y grading si los inicias manualmente. Cada `application.properties` permite cambiar el dialecto mediante `DB_DIALECT` y la URL completa mediante `DB_URL`.
+La configuración predeterminada utiliza MariaDB en `127.0.0.1:3306`, usuario `root` y las bases `practika_xampp_*`. Configura `DB_HOST`, `DB_PORT`, `DB_USERNAME`, `DB_PASSWORD` y `DB_SCHEMA_PREFIX` según tu instalación. `DB_URL` permite indicar la URL JDBC completa y `DB_DIALECT` cambia el dialecto de Hibernate.
 
-Comprobación local realizada: arranque y reinicio de los cinco servicios sobre XAMPP, migraciones completas, 20 usuarios (1 ADMIN, 1 UTP, 3 profesores y 15 estudiantes), login por correo y RUN, perfil, cursos, unidades y entregas con HTTP 200 a través del Gateway. Se usó una cuenta temporal, eliminada al terminar. UTP ve las 16 unidades del catálogo; el estudiante recibe una lista vacía mientras no existan evaluaciones publicadas. También se comprobó que el lanzador detiene los demás servicios cuando falla uno. ADB devolvió acceso denegado al directorio de configuración, por lo que falta verificar el flujo desde un dispositivo Android.
+Conserva `RESET_DATABASE_ON_START=false` y `SPRING_LIQUIBASE_DROP_FIRST=false`. El contexto `dev` carga los datos iniciales una sola vez. Configura el mismo `GRADING_INTERNAL_TOKEN` en content y grading.
 
-El Hibernate actual emite un aviso porque su dialecto estándar declara MariaDB 10.6 como versión mínima y XAMPP incluye 10.4. Las comprobaciones anteriores pasaron con esta instalación; no se han verificado todos los flujos de escritura.
+Para completar los cursos y las evaluaciones del catálogo inicial de Primero y Segundo básico, ejecuta después de iniciar los servicios:
 
-### Verificar persistencia de unidades
+```sh
+python -m pip install -r db-migrations/requirements.txt
+python db-migrations/asignar_cursos.py --aplicar
+```
 
-UTP crea y edita el catálogo con `POST /api/v1/content/unidades` y `PUT /api/v1/content/unidades/{id}`. Comprueba el resultado con `GET /api/v1/content/unidades/{id}` y `GET /api/v1/content/unidades?idAsignatura=...`, usando la misma sesión UTP que Android. La fila se almacena en `practika_xampp_content.unidades` al usar el lanzador local. Tras detener y volver a iniciar el backend, el mismo ID debe conservar el título y la descripción editados.
+La migración crea un respaldo local antes de guardar y puede repetirse sin duplicar las publicaciones.
 
-El catálogo UTP incluye unidades sin evaluaciones. El estudiante consulta únicamente contenido seleccionado por su profesor para su sección; su lista puede estar vacía aunque la unidad exista en la base. Para que aparezca, UTP prepara una actividad o prueba con preguntas y el profesor la selecciona mediante `POST /api/v1/content/secciones/asignaturas/{idCurso}/evaluaciones/{idEvaluacion}/seleccionar`.
+### Docker
 
-Las rutas antiguas `POST /content/cursos/{idCurso}/unidades`, `POST /content/asignaciones` y `POST /content/cursos/{idCurso}/evaluaciones/publicar` responden 410 y están marcadas como obsoletas en Swagger. Usa las rutas de catálogo y selección anteriores (con el prefijo `/api/v1`).
+Después de compilar los JAR, inicia los servicios con:
 
-Prueba de escritura desde PowerShell: `.\comprobar-conexion.ps1 -Usuario utp@practika.local -ComprobarPersistencia`. Solicita la contraseña, crea una unidad temporal, verifica su creación y edición con nuevas peticiones GET y la elimina al terminar. Esta comprobación no reinicia los servicios; para verificar durabilidad entre arranques, conserva una unidad propia y consulta su mismo ID después de reiniciar.
+```sh
+docker compose up --build
+```
+
+Compose utiliza MySQL 8.4, las bases `practika_*` y volúmenes persistentes.
+
+### Android
+
+Con el Gateway disponible en `http://127.0.0.1:8080`, conecta el dispositivo con depuración USB y ejecuta:
+
+```sh
+adb reverse tcp:8080 tcp:8080
+```
+
+La variante debug utiliza `PRACTIKA_API_URL` de `gradle.properties`. Para usar una IP de la red local, configura `-PPRACTIKA_API_URL=http://IP:8080/` al compilar la app. La variante release utiliza su configuración HTTPS independiente.
+
+### Catálogo y publicaciones
+
+UTP crea y edita unidades mediante `POST /api/v1/content/unidades` y `PUT /api/v1/content/unidades/{id}`. El profesor selecciona las evaluaciones de su sección mediante `POST /api/v1/content/secciones/asignaturas/{idCurso}/evaluaciones/{idEvaluacion}/seleccionar`. Los estudiantes consultan las evaluaciones publicadas para su sección.
 
 ### Tiempo en el inicio
 

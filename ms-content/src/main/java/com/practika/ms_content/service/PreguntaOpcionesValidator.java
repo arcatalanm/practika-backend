@@ -45,12 +45,15 @@ final class PreguntaOpcionesValidator {
                     throw error("Marca una sola alternativa correcta");
                 }
             }
-            case "SELECCION_MULTIPLE" -> {
+            case "SELECCION_UNICA", "SELECCION_MULTIPLE" -> {
                 if (opciones.size() < 2) {
                     throw error("Agrega al menos 2 alternativas");
                 }
                 if (correctas == 0) {
                     throw error("Marca al menos una alternativa correcta");
+                }
+                if ("SELECCION_UNICA".equalsIgnoreCase(tipo) && correctas != 1) {
+                    throw error("Marca una sola alternativa correcta");
                 }
             }
             default -> throw error("Este tipo de pregunta no admite el guardado conjunto de alternativas");

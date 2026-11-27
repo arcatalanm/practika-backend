@@ -12,7 +12,7 @@ public record PreguntaRequest(Integer idActividad, Integer idPrueba,
         @NotNull(message = "Indica el puntaje de la pregunta")
         @DecimalMin(value = "0.01", message = "El puntaje debe ser mayor que cero")
         @Digits(integer = 3, fraction = 2, message = "El puntaje admite hasta 3 enteros y 2 decimales") BigDecimal puntajeMaximo,
-        @Valid List<@NotNull(message = "No envíes alternativas vacías") PreguntaOpcionRequest> opciones) {
+        List<@NotNull(message = "No envíes alternativas vacías") @Valid PreguntaOpcionRequest> opciones) {
     public PreguntaRequest(Integer idActividad, Integer idPrueba, String texto, String tipo, BigDecimal puntajeMaximo) {
         this(idActividad, idPrueba, texto, tipo, puntajeMaximo, null);
     }
