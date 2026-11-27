@@ -30,56 +30,14 @@ Inicia MySQL y ejecuta `./mvnw spring-boot:run` desde la carpeta de cada servici
 
 La configuración predeterminada utiliza MariaDB en `127.0.0.1:3306`, usuario `root` y las bases `practika_xampp_*`. Configura `DB_HOST`, `DB_PORT`, `DB_USERNAME`, `DB_PASSWORD` y `DB_SCHEMA_PREFIX` según tu instalación. `DB_URL` permite indicar la URL JDBC completa y `DB_DIALECT` cambia el dialecto de Hibernate.
 
-Conserva `RESET_DATABASE_ON_START=false` y `SPRING_LIQUIBASE_DROP_FIRST=false`. El contexto `dev` carga los datos iniciales una sola vez. Configura el mismo `GRADING_INTERNAL_TOKEN` en content y grading.
-
-Para completar los cursos y las evaluaciones del catálogo inicial de Primero y Segundo básico, ejecuta después de iniciar los servicios:
-
-```sh
-python -m pip install -r db-migrations/requirements.txt
-python db-migrations/asignar_cursos.py --aplicar
-```
-
-La migración crea un respaldo local antes de guardar y puede repetirse sin duplicar las publicaciones.
-
-### Docker
-
-Después de compilar los JAR, inicia los servicios con:
-
-```sh
-docker compose up --build
-```
-
-Compose utiliza MySQL 8.4, las bases `practika_*` y volúmenes persistentes.
-
-### Android
-
-Con el Gateway disponible en `http://127.0.0.1:8080`, conecta el dispositivo con depuración USB y ejecuta:
-
-```sh
-adb reverse tcp:8080 tcp:8080
-```
-
-La variante debug utiliza `PRACTIKA_API_URL` de `gradle.properties`. Para usar una IP de la red local, configura `-PPRACTIKA_API_URL=http://IP:8080/` al compilar la app. La variante release utiliza su configuración HTTPS independiente.
-
 ### Catálogo y publicaciones
 
 UTP crea y edita unidades mediante `POST /api/v1/content/unidades` y `PUT /api/v1/content/unidades/{id}`. El profesor selecciona las evaluaciones de su sección mediante `POST /api/v1/content/secciones/asignaturas/{idCurso}/evaluaciones/{idEvaluacion}/seleccionar`. Los estudiantes consultan las evaluaciones publicadas para su sección.
 
-### Tiempo en el inicio
+### Tiempo en el inicio (API Externa)
 
 `GET /api/v1/content/tiempo` consulta Open-Meteo para Antonio Varas 666, Providencia. Devuelve temperatura actual, mínima, máxima y estado del cielo. La respuesta se comparte en memoria durante diez minutos y Android muestra la tarjeta al final del inicio.
 
-Configuración opcional: `WEATHER_API_URL`, `WEATHER_LOCATION_NAME`, `WEATHER_LATITUDE` y `WEATHER_LONGITUDE`. No necesita clave ni tablas nuevas.
-
-### Secciones de primero y segundo básico
-
-Se admiten primero y segundo básico. Los demás niveles quedan inactivos y conservan su historial. Los cursos de las asignaturas se crean a partir de las secciones activas de `ms-auth`.
-
-### Archivos multimedia
-
-Los archivos se guardan en `ms-auth/media` (fotos de perfil) y `ms-content/media` (imágenes y audios). La base de datos conserva rutas y metadatos. Liquibase exporta los BLOB anteriores antes de quitar las columnas binarias.
-
-`MEDIA_STORAGE_PATH` permite cambiar la carpeta. Docker monta ambas carpetas para conservar los archivos. Se excluyen de Git; respalda las bases de datos y las carpetas `media` juntas.
 
 ### Usuario administrador
 
