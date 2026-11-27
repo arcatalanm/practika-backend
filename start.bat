@@ -26,7 +26,11 @@ if errorlevel 1 (
 )
 
 for %%S in (ms-auth ms-academic ms-content ms-grading api-gateway) do (
-    start "%%S" /D "%~dp0%%S" cmd /k java -jar target\%%S-0.0.1-SNAPSHOT.jar --logging.level.org.springframework.web.servlet.DispatcherServlet=DEBUG
+    start "" /b /D "%~dp0%%S" java -jar target\%%S-0.0.1-SNAPSHOT.jar --logging.level.org.springframework.web.servlet.DispatcherServlet=DEBUG
 )
+
+echo Los logs de los cinco servicios se muestran en esta ventana.
+echo Puedes detenerlos con Ctrl+Pausa o cerrando esta ventana.
+pause >nul
 
 endlocal
