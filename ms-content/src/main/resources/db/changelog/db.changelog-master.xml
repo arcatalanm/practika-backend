@@ -55,4 +55,5 @@
         <addNotNullConstraint tableName="archivos_evaluacion" columnName="ruta_archivo" columnDataType="VARCHAR(512)"/>
         <dropColumn tableName="archivos_evaluacion" columnName="contenido"/>
     </changeSet>
+    <include file="db/changelog/db.changelog-initial-course-content.sql"/>
 </databaseChangeLog>

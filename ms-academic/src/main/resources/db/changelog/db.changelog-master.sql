@@ -223,3 +223,22 @@ UPDATE objetivo_aprendizajes SET id_asignatura=3,descripcion_objetivo='Distingui
 UPDATE objetivo_aprendizajes SET id_asignatura=3,descripcion_objetivo='Reconocer fuerzas, cambios en el movimiento y formas de energía del entorno.' WHERE id_aprendizaje=910014;
 UPDATE objetivo_aprendizajes SET id_asignatura=5,descripcion_objetivo='Reconocer construcciones, espacios y legados culturales de la antigua Roma.' WHERE id_aprendizaje=910015;
 UPDATE objetivo_aprendizajes SET id_asignatura=5,descripcion_objetivo='Interpretar mapas mediante orientación, símbolos, leyendas y escalas sencillas.' WHERE id_aprendizaje=910016;
+
+--changeset practika:academic-017-primary-courses-with-stable-references context:@dev
+--preconditions onFail:HALT onError:HALT
+--precondition-sql-check expectedResult:4 SELECT COUNT(*) FROM asignaturas WHERE activo=1 AND id_asignatura IN (1,2,3,5)
+--precondition-sql-check expectedResult:0 SELECT COUNT(*) FROM cursos_portal WHERE id_curso_portal IN (910101,910102,910103,910105,910201,910202,910203,910205) AND (id_periodo_academico IS NOT NULL OR id_seccion<>CASE WHEN id_curso_portal<910200 THEN 910001 ELSE 910002 END OR id_asignatura<>MOD(id_curso_portal,100))
+--precondition-sql-check expectedResult:0 SELECT COUNT(*) FROM cursos_portal WHERE id_seccion IN (910001,910002) AND id_periodo_academico IS NULL AND id_curso_portal<>910000+(id_seccion-910000)*100+id_asignatura
+INSERT INTO cursos_portal (id_curso_portal,id_seccion,id_asignatura,nombre,activo)
+SELECT 910000+g.grado*100+a.id_asignatura,910000+g.grado,a.id_asignatura,a.nombre_materia,1
+FROM (SELECT 1 AS grado UNION ALL SELECT 2) g
+CROSS JOIN asignaturas a
+WHERE a.activo=1 AND a.id_asignatura IN (1,2,3,5)
+ON DUPLICATE KEY UPDATE activo=1;
+
+INSERT INTO docentes_cursos_portal (id_curso_portal,run_profesor)
+SELECT c.id_curso_portal,d.run_profesor
+FROM cursos_portal c JOIN docentes_asignaturas d ON d.id_asignatura=c.id_asignatura
+WHERE c.id_curso_portal IN (910101,910102,910103,910105,910201,910202,910203,910205)
+  AND d.ambos_basicos=1
+ON DUPLICATE KEY UPDATE run_profesor=VALUES(run_profesor);
